@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  AUDITOR
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  lastname  String
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productos   Producto[]
+  facturas    Factura[]
+  auditorias  Auditoria[]
+}
+
+model Marca {
+  id        Int       @id @default(autoincrement())
+  nombre    String    @unique
+  productos Producto[]
+}
+
+model Categoria {
+  id        Int        @id @default(autoincrement())
+  nombre    String     @unique
+  productos Producto[] @relation("ProductoCategorias", references: [id])
+}
+
+model Producto {
+  id          Int          @id @default(autoincrement())
+  nombre      String
+  descripcion String
+  precio      Float
+  marcaId     Int
+  marca       Marca        @relation(fields: [marcaId], references: [id])
+  categorias  Categoria[]  @relation("ProductoCategorias", references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Factura {
+  id        Int             @id @default(autoincrement())
+  usuarioId Int
+  usuario   User            @relation(fields: [usuarioId], references: [id])
+  total     Float
+  fecha     DateTime        @default(now())
+  productos FacturaProducto[]
+}
+
+model FacturaProducto {
+  id        Int      @id @default(autoincrement())
+  facturaId Int
+  productoId Int
+  cantidad  Int
+  precio    Float
+  subtotal  Float
+  factura   Factura   @relation(fields: [facturaId], references: [id])
+  producto  Producto  @relation(fields: [productoId], references: [id])
+}
