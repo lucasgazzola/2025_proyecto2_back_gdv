@@ -60,6 +60,10 @@ export class AuthService {
     };
   }
 
+  logout() {
+  return { message: 'Sesión cerrada correctamente' };
+  }
+
   generateToken(payload: TokenPayload, type: 'auth' | 'refresh' | 'reset'): string {
 
     const secret: string = config[type].secret;
