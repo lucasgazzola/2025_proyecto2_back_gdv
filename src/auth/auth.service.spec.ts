@@ -4,6 +4,13 @@ import { UsuarioService } from '../usuario/usuario.service';
 import { RegisterAuthDto } from './dto/register.dto';
 import { LoginAuthDto } from './dto/login.dto';
 import { Role } from '../common/enums/roles.enums';
+import { MailService } from '../common/mail.service';
+
+class MockMailService {
+  sendMail() {
+    return true;
+  }
+}
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -32,6 +39,10 @@ describe('AuthService', () => {
         {
           provide: UsuarioService,
           useValue: mockUsuarioService,
+        },
+        { 
+          provide: MailService, 
+          useClass: MockMailService 
         },
       ],
     }).compile();

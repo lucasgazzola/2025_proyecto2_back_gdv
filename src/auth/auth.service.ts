@@ -5,7 +5,7 @@ import { RegisterAuthDto } from './dto/register.dto';
 import { LoginAuthDto } from './dto/login.dto';
 import { Payload } from '../common/interfaces/payload';
 import { Role } from '../common/enums/roles.enums';
-import { sign, verify } from 'jsonwebtoken';
+import  jwt from 'jsonwebtoken';
 import { config } from '../common/config/jwtConfig';
 import { MailService } from '../common/mail.service';
 
@@ -65,12 +65,12 @@ export class AuthService {
     const secret: string = config[type].secret;
     const expiresIn: string = config[type].expiresIn;
 
-    return sign(payload as object, secret, { expiresIn });
+    return jwt.sign(payload as object, secret, { expiresIn } as jwt.SignOptions);
   }
 
   refreshToken(refreshToken: string) {
     try {
-      const payload = verify(refreshToken, config.refresh.secret) as Payload;
+      const payload = jwt.verify(refreshToken, config.refresh.secret) as Payload;
       const currentTime = Math.floor(Date.now() / 1000);
       const timeToExpire = (payload.exp - currentTime) / 60;
 
@@ -92,7 +92,7 @@ export class AuthService {
   }
 
   getPayload(token: string, type: 'auth' | 'refresh' = 'auth'): Payload {
-    return verify(token, config[type].secret) as Payload;
+    return jwt.verify(token, config[type].secret) as Payload;
   }
 
   async sendPasswordResetEmail(email: string) {
