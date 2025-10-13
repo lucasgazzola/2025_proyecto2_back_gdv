@@ -3,6 +3,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UsuarioService } from '../usuario/usuario.service';
 import { MailService } from '../common/mail.service';
+import { UsuarioRepository } from '../usuario/usuario.repository';
 
 class MockMailService {
   sendMail() {
@@ -23,6 +24,7 @@ describe('AuthController', () => {
           provide: MailService, 
           useClass: MockMailService 
         },
+        UsuarioRepository
       ],
     }).compile();
 

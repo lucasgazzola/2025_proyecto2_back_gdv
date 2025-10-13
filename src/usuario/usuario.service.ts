@@ -3,56 +3,43 @@ import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import * as bcrypt from 'bcrypt';
 import { User } from './usuario.interface';
+import { UsuarioRepository } from './usuario.repository';
 
 @Injectable()
 export class UsuarioService {
-  private users: User[] = [];
-  private id = 1;
+  constructor(private readonly repo: UsuarioRepository) {}
 
-  async create(createUsuarioDto: CreateUsuarioDto): Promise<User> {
-
-    const newUser: User = {
-      id: this.id++,
-      ...createUsuarioDto
-    };
-
-    this.users.push(newUser);
-    return newUser;
+  async create(dto: CreateUsuarioDto): Promise<User> {
+    return this.repo.create(dto);
   }
 
   async findByEmail(email: string): Promise<User | undefined> {
-    return this.users.find((u) => u.email === email);
+    return this.repo.findByEmail(email);
   }
 
   async findByEmailWithPassword(email: string): Promise<User | undefined> {
-    return this.users.find(u => u.email === email);
+    return this.repo.findByEmailWithPassword(email);
   }
 
   findAll(): User[] {
-    return this.users;
+    return this.repo.findAll();
   }
 
   findOne(id: number): User {
-    const user = this.users.find(u => u.id === id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
-    return user;
+    return this.repo.findOne(id);
   }
 
-  async update(id: number, updateUserDto: UpdateUsuarioDto): Promise<User> {
-    const user = this.findOne(id);
+  async update(id: number, dto: UpdateUsuarioDto): Promise<User> {
+    const data = { ...dto };
 
-    if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    if (dto.password) {
+      data.password = await bcrypt.hash(dto.password, 10);
     }
 
-    Object.assign(user, updateUserDto);
-    return user;
+    return this.repo.update(id, data);
   }
 
   remove(id: number): void {
-    const index = this.users.findIndex(u => u.id === id);
-    if (index === -1) throw new NotFoundException(`User ${id} not found`);
-    this.users.splice(index, 1);
+    this.repo.remove(id);
   }
-
 }

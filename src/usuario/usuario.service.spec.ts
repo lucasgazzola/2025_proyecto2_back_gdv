@@ -2,13 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsuarioService } from  './usuario.service';
 import { CreateUsuarioDto } from  './dto/create-usuario.dto';
 import { Role } from '../common/enums/roles.enums';
+import { UsuarioRepository } from './usuario.repository';
 
 describe('UsersService', () => {
   let service: UsuarioService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [UsuarioService],
+      providers: [UsuarioService, UsuarioRepository],
     }).compile();
 
     service = module.get<UsuarioService>(UsuarioService);
