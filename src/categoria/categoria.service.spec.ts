@@ -1,10 +1,13 @@
+import { CategoriaRepository } from './categoria.repository';
 import { CategoriaService } from './categoria.service';
 
 describe('CategoriaService', () => {
   let service: CategoriaService;
+  let repo: CategoriaRepository;
 
   beforeEach(() => {
-    service = new CategoriaService();
+    repo = new CategoriaRepository();
+    service = new CategoriaService(repo);
   });
 
   it('debería devolver todas las categorías', () => {
