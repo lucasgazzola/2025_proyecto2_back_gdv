@@ -2,14 +2,20 @@ import { MarcaService } from './marca.service';
 import { MarcaRepository } from './marca.repository';
 import { CreateMarcaDto } from './dto/create-marca.dto';
 import { UpdateMarcaDto } from './dto/update-marca.dto';
+import { ProductoRepository } from '../producto/producto.repository';
+import { CategoriaRepository } from '../categoria/categoria.repository';
 
 describe('MarcaService', () => {
   let service: MarcaService;
   let repo: MarcaRepository;
+  let productoRepo: ProductoRepository;
+  let categoriaRepo: CategoriaRepository;
 
   beforeEach(() => {
     repo = new MarcaRepository();
-    service = new MarcaService(repo);
+    productoRepo = new ProductoRepository();
+    categoriaRepo = new CategoriaRepository();
+    service = new MarcaService(repo, productoRepo);
   });
 
   it('debería crear una marca', async () => {
@@ -66,4 +72,18 @@ describe('MarcaService', () => {
 
   await expect(service.create({ nombre: 'nike' })).rejects.toThrow("Marca ya existente");
 });
+
+  it('debería bloquear la eliminación si hay productos asociados', async () => {
+    const marca = await repo.create({ nombre: 'Intel' });
+    await productoRepo.create({
+      nombre: 'Core i9',
+      precio: 600,
+      imagen: 'https://...',
+      marca,
+      categorias: [categoriaRepo.findById(1)!],
+    });
+
+  await expect(service.remove(marca.id)).rejects.toThrow("No se puede eliminar la marca, ya tiene productos asoaciados");
+});
+
 });
