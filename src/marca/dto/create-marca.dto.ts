@@ -1,11 +1,16 @@
-import { IsString  } from "class-validator";
+import { IsInt, IsOptional, IsString  } from "class-validator";
 
 
 export class CreateMarcaDto {
-  
-  @IsString()
-  nombre: string;
 
   @IsString()
-  descripcion?: string;
+  name: string;
+  
+  @IsString()
+  @IsOptional()
+  logo?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
 }

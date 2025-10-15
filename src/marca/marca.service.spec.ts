@@ -1,5 +1,4 @@
 import { MarcaService } from './marca.service';
-import { MarcaRepository } from './marca.repository';
 import { CreateMarcaDto } from './dto/create-marca.dto';
 import { UpdateMarcaDto } from './dto/update-marca.dto';
 import { ProductoRepository } from '../producto/producto.repository';
@@ -80,7 +79,7 @@ describe('MarcaService', () => {
       precio: 600,
       imagen: 'https://...',
       marca,
-      categorias: [categoriaRepo.findById(1)!],
+      categorias: [],
     });
 
   await expect(service.remove(marca.id)).rejects.toThrow("No se puede eliminar la marca, ya tiene productos asoaciados");
