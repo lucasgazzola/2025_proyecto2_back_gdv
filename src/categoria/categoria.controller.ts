@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { CategoriaService } from './categoria.service';
-import { NotFoundException } from '@nestjs/common';
+import { ParseIntPipe } from '@nestjs/common';
 
 @Controller('categorias')
 export class CategoriaController {
@@ -12,9 +12,8 @@ export class CategoriaController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: number) {
-    const categoria = this.service.findById(+id);
-    if (!categoria) throw new NotFoundException('Categoría no encontrada');
-    return categoria;
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    return await this.service.findById(id);
+
   }
 }

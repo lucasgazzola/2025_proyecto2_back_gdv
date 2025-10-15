@@ -1,16 +1,26 @@
-import { Injectable } from '@nestjs/common';
-import { Categoria } from './categoria.interface';
-import { CategoriaRepository } from './categoria.repository';
+import { Inject, Injectable } from '@nestjs/common';
+import { Categoria } from './categoria.entity';
+import { ICategoriaRepositoryToken } from './repositories/categoria.repository.interface';
+import type{ ICategoriaRepository } from './repositories/categoria.repository.interface';
+
 
 @Injectable()
 export class CategoriaService {
-  constructor(private readonly repo: CategoriaRepository) {}
+  
+  constructor(
+    @Inject(ICategoriaRepositoryToken) 
+    private readonly repo: ICategoriaRepository,
+  ) {}
 
-  findAll(): Categoria[] {
-    return this.repo.findAll();
+  async findAll(): Promise<Categoria[]> {
+    return await this.repo.findAll();
   }
 
-  findById(id: number): Categoria | null {
-    return this.repo.findById(id);
+  async findById(id: number): Promise<Categoria | null> {
+
+    const categoria = await this.repo.findById(id);
+    if (!categoria) throw new Error('Categoría no encontrada');
+
+    return categoria;
   }
 }
