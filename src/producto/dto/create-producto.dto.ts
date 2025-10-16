@@ -1,25 +1,32 @@
-import { ArrayNotEmpty, IsArray, IsInt, IsNumber, IsPositive, IsString, IsUrl } from "class-validator";
+import { ArrayNotEmpty, IsArray, IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUrl } from "class-validator";
 
 
 export class CreateProductoDto {
   @IsString()
-  nombre: string;
+  name: string;
 
-  @IsString()
-  descripcion?: string;
+  @IsInt()
+  @IsOptional()
+  stock?: number;
   
   @IsNumber()
   @IsPositive({ message: 'El precio debe ser mayor a 0' })
-  precio: number;
+  price: number;
 
-  @IsUrl()
-  imagen: string;
+  @IsArray()
+  @IsUrl({}, { each: true })
+  imagesURL: string[];
 
   @IsInt()
-  marcaId: number;
+  @IsOptional()
+  brandId?: number;
+
+  @IsInt()
+  @IsOptional()
+  providerId?: number;
 
   @IsArray()
   @ArrayNotEmpty({ message: 'Debe tener al menos una categoría' })
   @IsInt({ each: true })
-  categoriaIds: number[];
+  categoryIds?: number[];
 }
