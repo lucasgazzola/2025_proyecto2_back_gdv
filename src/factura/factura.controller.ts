@@ -1,14 +1,20 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { FacturaService } from './factura.service';
 import { CreateFacturaDto } from './dto/create-factura.dto';
+import { ParseIntPipe } from 'src/common/pipes/parse-int.pipe';
 
 @Controller('facturas')
 export class FacturaController {
   constructor(private readonly service: FacturaService) {}
 
   @Post()
-  create(@Body() dto: CreateFacturaDto) {
-    return this.service.create(dto);
+  create(@Body() data: any) {
+    return this.service.create(data);
+  }
+
+  @Delete(':id')
+  delete(@Param('id', ParseIntPipe) id: number) {
+    return this.service.delete(id);
   }
 
   @Get()
@@ -17,7 +23,7 @@ export class FacturaController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.service.findOne(id);
+  findById(@Param('id', ParseIntPipe) id: number) {
+    return this.service.findById(id);
   }
 }

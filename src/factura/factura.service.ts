@@ -1,62 +1,75 @@
-import { Injectable } from '@nestjs/common';
-import { CreateFacturaDto } from './dto/create-factura.dto';
-import { Factura } from './factura.interface';
-import { FacturaItem } from './factura-item.interface';
-import { FacturaRepository } from './factura.repository';
-import { ProductoRepository } from '../producto/producto.repository';
-import { UsuarioRepository } from '../usuario/usuario.repository';
+import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import { IFacturaRepositoryToken } from './repositories/factura.repository.interface';
+import type { IFacturaRepository } from './repositories/factura.repository.interface';
+import { CreateFacturaDto} from './dto/create-factura.dto';
+import { FacturaValidatorHelper } from './helpers/factura-validator.helper';
+import { IFacturaItemCalculada } from './factura-calculada.interface';
+import { IProductoRepositoryToken } from 'src/producto/repositories/producto.repository.interface';
+import type { IProductoRepository } from 'src/producto/repositories/producto.repository.interface';
+import { FacturaCalculatorHelper } from './helpers/factura-calculator.helper';
+import { IFacturaCalculada } from './factura-calculada.interface';
 
 @Injectable()
 export class FacturaService {
   constructor(
-    private readonly facturaRepo: FacturaRepository,
-    private readonly productoRepo: ProductoRepository,
-    private readonly usuarioRepo: UsuarioRepository,
+    @Inject(IFacturaRepositoryToken)
+    private readonly repo: IFacturaRepository,
+    @Inject(IProductoRepositoryToken)
+    private readonly productoRepo: IProductoRepository
   ) {}
 
-  async create(dto: CreateFacturaDto): Promise<Factura> {
+  findAll() {
+    return this.repo.findAll();
+  }
 
-    if (!dto.items || dto.items.length === 0) {
-      throw new Error('La factura debe tener al menos un producto');
+  findById(id: number) {
+    return this.repo.findById(id);
+  }
+
+  async create(dto: CreateFacturaDto) {
+
+    FacturaValidatorHelper.validarItems(dto.items);
+
+    for (const item of dto.items) {
+      FacturaValidatorHelper.validarCantidad(item.quantity);
     }
+    
+    const productos = await this.productoRepo.findByIds(dto.items.map(i => i.productId));
 
-    const usuario = await this.usuarioRepo.findById(dto.usuarioId);
-    if (!usuario) throw new Error('Usuario no encontrado');
+    const itemsCalculados: IFacturaItemCalculada[] = []
 
-    const items: FacturaItem[] = [];
+    for (const item of dto.items) {
+      const producto = productos.find(p => p.id === item.productId);
 
-    for (const itemDto of dto.items) {
-      const producto = await this.productoRepo.findById(itemDto.productoId);
-      if (!producto) throw new Error(`Producto con ID ${itemDto.productoId} no encontrado`);
+      if (!producto) {
+          throw new BadRequestException('Producto no encontrado');
+      }
+      FacturaValidatorHelper.validarPrecio(producto.price);
+      FacturaValidatorHelper.validarStock(producto.stock, item.quantity, producto.name);
 
-      const precioUnitario = producto.precio;
-      const total = precioUnitario * itemDto.cantidad;
-
-      items.push({
-        producto,
-        cantidad: itemDto.cantidad,
-        precioUnitario,
-        total,
+      const subtotal = FacturaCalculatorHelper.calcularSubtotal(producto.price, item.quantity);
+      
+      itemsCalculados.push({
+        invoiceId: undefined,
+        productId: producto.id,
+        quantity: item.quantity,
+        providerId: producto.providerId,
+        unitPrice: producto.price,
+        subtotal
       });
     }
 
-    const subtotal = items.reduce((acc, item) => acc + item.total, 0);
-    const total = subtotal;
+    const invoiceNumber = Math.round(Math.random() * 1000);
+    const total = FacturaCalculatorHelper.calcularTotal(itemsCalculados);
+    const facturaCalculada: IFacturaCalculada = { invoiceNumber, userId: dto.userId, items: itemsCalculados, total };
 
-    return this.facturaRepo.create({
-      usuario,
-      fecha: new Date(),
-      items,
-      subtotal,
-      total,
-    });
+    return await this.repo.create(facturaCalculada);
+
   }
 
-  findAll() {
-    return this.facturaRepo.findAll();
-  }
 
-  findOne(id: number) {
-    return this.facturaRepo.findById(id);
+
+  delete(id: number) {
+    return this.repo.delete(id);
   }
 }

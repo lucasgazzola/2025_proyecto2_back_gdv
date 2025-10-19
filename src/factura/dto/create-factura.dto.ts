@@ -1,13 +1,34 @@
-import { IsArray, IsInt, ValidateNested } from 'class-validator';
+import { IsArray, IsInt, IsOptional, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { FacturaItemDto } from './factura-item.dto';
+
+export class CreateFacturaItemDto {
+
+  @IsInt()
+  invoiceId: number;
+
+  @IsInt()
+  productId: number;
+
+  @IsInt()
+  quantity: number;
+
+  @IsInt()
+  providerId: number;
+
+  @IsInt()
+  unitPrice: number;
+}
 
 export class CreateFacturaDto {
+
   @IsInt()
-  usuarioId: number;
+  invoiceNumber: number;
+
+  @IsInt()
+  userId: number;
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => FacturaItemDto)
-  items: FacturaItemDto[];
+  @Type(() => CreateFacturaItemDto)
+  items: CreateFacturaItemDto[];
 }
