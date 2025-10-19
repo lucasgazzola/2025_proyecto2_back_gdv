@@ -8,10 +8,10 @@ export class MarcaMapper {
         return new Marca(
             marca.id,
             marca.name,
-            marca.logo,
-            marca.description,
             marca.createdAt,
             marca.updatedAt,
+            marca.logo,
+            marca.description,
         );
     }
 
