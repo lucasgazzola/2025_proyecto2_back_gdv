@@ -36,6 +36,20 @@ export class PrismaProductoRepository implements IProductoRepository {
         
     }
 
+    async findByIds(ids: number[]): Promise<Producto[]> {
+
+        const productos = await prisma.product.findMany({ 
+            where: { id: { in: ids } },
+            include: {
+                brand: true,
+                categories: true,
+                provider: true
+            }
+        });
+
+        return productos.map(ProductoMapper.toDomain);
+    }
+
     async create(createProductoDto: CreateProductoDto): Promise<Producto> {
 
         const producto = await prisma.product.create({
