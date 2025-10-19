@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/commo
 import { UsuarioService } from './usuario.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
+import { ParseIntPipe } from '../common/pipes/parse-int.pipe';
 
 @Controller('usuarios')
 export class UsuarioController {
@@ -17,18 +18,23 @@ export class UsuarioController {
     return this.usuarioService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usuarioService.findOne(+id);
+  @Get('email/:email')
+  findByEmail(@Param('email') email: string) {
+    return this.usuarioService.findByEmail(email);
   }
 
+  @Get(':id')
+  findById(@Param('id', ParseIntPipe) id: number) {
+    return this.usuarioService.findById(id);
+  }
+  
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUsuarioDto: UpdateUsuarioDto) {
-    return this.usuarioService.update(+id, updateUsuarioDto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() updateUsuarioDto: UpdateUsuarioDto) {
+    return this.usuarioService.update(id, updateUsuarioDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usuarioService.remove(+id);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.usuarioService.remove(id);
   }
 }
