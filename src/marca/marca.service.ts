@@ -3,7 +3,6 @@ import { CreateMarcaDto } from './dto/create-marca.dto';
 import { UpdateMarcaDto } from './dto/update-marca.dto';
 import type { IMarcaRepository } from './repositories/marca.repository.interface';
 import { IMarcaRepositoryToken } from './repositories/marca.repository.interface';
-import { ProductoRepository } from '../producto/producto.repository';
 import { Marca } from './marca.entity';
 
 @Injectable()
@@ -11,7 +10,6 @@ export class MarcaService {
   constructor(
     @Inject(IMarcaRepositoryToken)
     private readonly repo: IMarcaRepository,
-    private readonly productoRepo: ProductoRepository,
   ) {}
 
   async create(dto: CreateMarcaDto) {
@@ -39,11 +37,7 @@ export class MarcaService {
   }
 
   async remove(id: number): Promise<Marca> {
-
-    const productos = await this.productoRepo.findAll();
-    const asoaciados = productos.filter(p => p.marca.id === id);
-
-    if (asoaciados.length > 0) throw new Error('No se puede eliminar la marca, ya tiene productos asoaciados');
+    
 
     return this.repo.delete(id);
   }
