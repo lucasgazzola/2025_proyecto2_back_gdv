@@ -4,7 +4,9 @@ import { prisma } from "src/common/config/db-client";
 import { UsuarioMapper } from "../mapper/prisma-usuario.mapper";
 import { CreateUsuarioDto } from "../dto/create-usuario.dto";
 import { UpdateUsuarioDto } from "../dto/update-usuario.dto";
+import { Injectable } from "@nestjs/common";
 
+@Injectable()
 export class PrismaUsuarioRepository implements IUsuarioRepository {
 
     async findAll(): Promise<User[]> {
