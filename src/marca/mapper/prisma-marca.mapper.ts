@@ -12,6 +12,7 @@ export class MarcaMapper {
             marca.updatedAt,
             marca.logo,
             marca.description,
+            marca.isActive,
         );
     }
 
@@ -21,6 +22,7 @@ export class MarcaMapper {
             name: marca.name,
             logo: marca.logo,
             description: marca.description,
+            isActive: marca.isActive,
             createdAt: marca.createdAt,
             updatedAt: marca.updatedAt,
         };
@@ -31,14 +33,16 @@ export class MarcaMapper {
             name: marca.name,
             logo: marca.logo,
             description: marca.description,
+            isActive: marca.isActive ?? true,
         };
     }
 
     static toUpdatePersistence(marca: UpdateMarcaDto): any {
-        return {
-            name: marca.name,
-            logo: marca.logo,
-            description: marca.description,
-        };
+        const data: any = {};
+        if (marca.name !== undefined) data.name = marca.name;
+        if (marca.logo !== undefined) data.logo = marca.logo;
+        if (marca.description !== undefined) data.description = marca.description;
+        if (marca.isActive !== undefined) data.isActive = marca.isActive;
+        return data;
     }
 }
