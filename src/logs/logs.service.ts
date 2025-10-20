@@ -31,21 +31,21 @@ export class LogsService {
   }
 
   async createInfoLog(action: string, userId?: number, details?: string) {
-    return {
+    return this.create({
       status: LogStatus.INFO,
       action,
       userId,
       details,
-    };
+    });
   }
 
   async createFailureLog(action: string, userId?: number, details?: string) {
-    return {
+    return this.create({
       status: LogStatus.FAILURE,
       action,
       userId,
       details,
-    };
+    });
   }
 
 }

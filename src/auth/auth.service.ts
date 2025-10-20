@@ -5,9 +5,10 @@ import { RegisterAuthDto } from './dto/register.dto';
 import { LoginAuthDto } from './dto/login.dto';
 import { Payload } from '../common/interfaces/payload';
 import { Role } from '../common/enums/roles.enums';
-import  jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import { config } from '../common/config/jwtConfig';
 import { MailService } from '../common/mail.service';
+import { LogsService } from '../logs/logs.service';
 
 type TokenPayload = Omit<Payload, 'iat' | 'exp'>;
 
@@ -15,7 +16,8 @@ type TokenPayload = Omit<Payload, 'iat' | 'exp'>;
 export class AuthService {
   constructor(
     private usersService: UsuarioService,
-    private mailService: MailService
+    private mailService: MailService,
+    private logsService: LogsService,
   ) { }
 
   async register(body: RegisterAuthDto) {
@@ -23,6 +25,11 @@ export class AuthService {
     const userExists = await this.usersService.findByEmail(body.email);
 
     if (userExists) {
+      await this.logsService.createFailureLog(
+        'REGISTER_USER',
+        undefined,
+        `Intento de registro con email duplicado: ${body.email}`,
+      );
       throw new HttpException('El usuario ya existe', 400);
     }
 
@@ -36,6 +43,12 @@ export class AuthService {
       role: body.role ?? Role.USER
     });
 
+    await this.logsService.createSuccessLog(
+      'REGISTER_USER',
+      newUser.id,
+      `Usuario registrado: ${newUser.email} con rol ${newUser.role}`,
+    );
+
     const {password, ...result} = newUser;
 
     return result;
@@ -45,13 +58,29 @@ export class AuthService {
     const user = await this.usersService.findByEmailWithPassword(body.email);
 
     if (!user) {
+      await this.logsService.createFailureLog(
+        'LOGIN',
+        undefined,
+        `Intento de login con email inexistente: ${body.email}`,
+      );
       throw new UnauthorizedException('Usuario no encontrado');
     }
     const isPasswordValid = await bcrypt.compare(body.password, user.password);
 
     if (!isPasswordValid) {
+      await this.logsService.createFailureLog(
+        'LOGIN',
+        user.id,
+        `Intento de login con contraseña incorrecta: ${body.email}`,
+      );
       throw new UnauthorizedException('Contraseña incorrecta');
     }
+
+    await this.logsService.createSuccessLog(
+      'LOGIN',
+      user.id,
+      `Usuario ${user.email} inició sesión exitosamente`,
+    );
 
     const payload: TokenPayload = { id: user.id, role: user.role, email: user.email };
     return {

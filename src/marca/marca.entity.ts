@@ -6,6 +6,6 @@ export class Marca {
     public readonly createdAt: Date,
     public logo?: string,
     public description?: string,
-    
+    public isActive?: boolean,
   ){}
 }

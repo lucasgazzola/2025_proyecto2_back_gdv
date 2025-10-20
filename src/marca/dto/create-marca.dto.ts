@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString  } from "class-validator";
+import { IsBoolean, IsOptional, IsString  } from "class-validator";
 
 
 export class CreateMarcaDto {
@@ -13,4 +13,8 @@ export class CreateMarcaDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 }
