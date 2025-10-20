@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards} from '@nestjs/common';
 import { ProveedorService } from './proveedor.service';
-import { Proveedor } from './proveedor.entity';
 import { ParseIntPipe } from '@nestjs/common';
+import { Roles } from 'src/auth/roles.decorators';
+import { Role } from 'src/common/enums/roles.enums';
+import { JwtAuthGuard } from 'src/auth/auth-roles.guard';
 
 @Controller('proveedores')
 export class ProveedorController {
