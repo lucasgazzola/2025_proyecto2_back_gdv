@@ -6,10 +6,10 @@ export class RegisterAuthDto {
   email: string;
 
   @IsString()
-  name: string;
+  firstName: string;
 
   @IsString()
-  lastname: string;
+  lastName: string;
 
   @MinLength(6)
   @IsString()

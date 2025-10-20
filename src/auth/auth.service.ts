@@ -30,8 +30,8 @@ export class AuthService {
 
     const newUser = await this.usersService.create({
       email: body.email,
-      name: body.name,
-      lastname: body.lastname,
+      firstName: body.firstName,
+      lastName: body.lastName,
       password: hashedPassword,
       role: body.role ?? Role.USER
     });
@@ -53,7 +53,7 @@ export class AuthService {
       throw new UnauthorizedException('Contraseña incorrecta');
     }
 
-    const payload: TokenPayload = { email: user.email };
+    const payload: TokenPayload = { id: user.id, role: user.role, email: user.email };
     return {
       accessToken: this.generateToken(payload, 'auth'),
       refreshToken: this.generateToken(payload, 'refresh'),
@@ -72,13 +72,20 @@ export class AuthService {
     return jwt.sign(payload as object, secret, { expiresIn } as jwt.SignOptions);
   }
 
-  refreshToken(refreshToken: string) {
+  async refreshToken(refreshToken: string) {
     try {
       const payload = jwt.verify(refreshToken, config.refresh.secret) as Payload;
+
+      const user = await this.usersService.findByEmail(payload.email);
+
+      if (!user){
+        throw new UnauthorizedException('Token inválido o expirado');
+      }
+
       const currentTime = Math.floor(Date.now() / 1000);
       const timeToExpire = (payload.exp - currentTime) / 60;
 
-      const tokenPayload: TokenPayload = { email: payload.email };
+      const tokenPayload: TokenPayload = { id: user.id, role: user.role, email: payload.email };
 
       if (timeToExpire < 20) {
         return {
