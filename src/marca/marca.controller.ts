@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseIntPipe,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { MarcaService } from './marca.service';
 import { CreateMarcaDto } from './dto/create-marca.dto';
 import { UpdateMarcaDto } from './dto/update-marca.dto';
@@ -17,7 +28,6 @@ export class MarcaController {
   ) {}
 
   @Post()
-  @Roles(Role.AUDITOR)
   async create(@Body() dto: CreateMarcaDto, @Request() req) {
     const result = await this.service.create(dto);
     await this.logsService.createSuccessLog(
@@ -44,8 +54,11 @@ export class MarcaController {
   }
 
   @Patch(':id')
-  @Roles(Role.AUDITOR)
-  async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateMarcaDto, @Request() req) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMarcaDto,
+    @Request() req,
+  ) {
     const result = await this.service.update(id, dto);
     await this.logsService.createSuccessLog(
       'UPDATE_BRAND',
@@ -56,7 +69,6 @@ export class MarcaController {
   }
 
   @Delete(':id')
-  @Roles(Role.AUDITOR)
   async remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const result = await this.service.remove(id);
     await this.logsService.createSuccessLog(
