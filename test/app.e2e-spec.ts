@@ -23,3 +23,5 @@ describe('AppController (e2e)', () => {
       .expect('Hello World!');
   });
 });
+
+//TODO: Realizar tests de integración donde se verifique el correcto funcionamiento de los endpoints principales de la aplicación, incluyendo casos de éxito y manejo de errores.

@@ -11,16 +11,15 @@ import { Role } from '../common/enums/roles.enums';
 export class LogsController {
   constructor(private readonly logsService: LogsService) {}
 
-  @Post()
-  create(@Body() createLogDto: CreateLogDto) {
-    return this.logsService.create(createLogDto);
-  }
+  // ? Es necesario permitir la creación de logs vía API?
+  // @Post()
+  // create(@Body() createLogDto: CreateLogDto) {
+  //   return this.logsService.create(createLogDto);
+  // }
 
   @Get()
   @Roles(Role.AUDITOR)
   findAll() {
     return this.logsService.findAll();
   }
-
-
 }
