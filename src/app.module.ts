@@ -9,9 +9,20 @@ import { UsuarioModule } from './usuario/usuario.module';
 import { LogsModule } from './logs/logs.module';
 import { AuthModule } from './auth/auth.module';
 import { ProveedorModule } from './proveedor/proveedor.module';
+import { ClienteModule } from './cliente/cliente.module';
 
 @Module({
-  imports: [MarcaModule, CategoriaModule, ProductoModule, FacturaModule, UsuarioModule, LogsModule, AuthModule, ProveedorModule],
+  imports: [
+    MarcaModule,
+    CategoriaModule,
+    ProductoModule,
+    FacturaModule,
+    UsuarioModule,
+    LogsModule,
+    AuthModule,
+    ProveedorModule,
+    ClienteModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
