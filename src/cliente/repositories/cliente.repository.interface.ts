@@ -11,4 +11,5 @@ export interface IClienteRepository {
   findAll(): Promise<Cliente[]>;
   findById(id: number): Promise<Cliente | null>;
   findByEmail(email: string): Promise<Cliente | null>;
+  findByDni(dni: string): Promise<Cliente | null>;
 }

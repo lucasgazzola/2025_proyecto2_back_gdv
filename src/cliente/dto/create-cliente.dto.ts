@@ -14,7 +14,8 @@ export class CreateClienteDto {
   dni: string;
 
   @IsString()
-  phone: string;
+  @IsOptional()
+  phone?: string;
 
   @IsString()
   @IsOptional()

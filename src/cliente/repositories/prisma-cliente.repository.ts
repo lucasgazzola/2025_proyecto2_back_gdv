@@ -8,6 +8,14 @@ import { prisma } from '../../common/config/db-client';
 
 @Injectable()
 export class PrismaClienteRepository implements IClienteRepository {
+  async findByDni(dni: string): Promise<Cliente | null> {
+    const cliente = await prisma.customer.findUnique({
+      where: { dni },
+    });
+
+    return cliente ? ClienteMapper.toDomain(cliente) : null;
+  }
+
   async create(createClienteDto: CreateClienteDto): Promise<Cliente> {
     const cliente = await prisma.customer.create({
       data: ClienteMapper.toCreatePersistence(createClienteDto),
@@ -55,7 +63,7 @@ export class PrismaClienteRepository implements IClienteRepository {
 
   async findByEmail(email: string): Promise<Cliente | null> {
     const cliente = await prisma.customer.findUnique({
-      where: { email, isActive: true },
+      where: { email },
     });
 
     return cliente ? ClienteMapper.toDomain(cliente) : null;
