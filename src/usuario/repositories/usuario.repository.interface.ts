@@ -9,5 +9,6 @@ export interface IUsuarioRepository {
     findByEmailWithPassword(email: string): Promise<any>;
     create(data: any): Promise<any>;
     update(id: number, data: any): Promise<any>;
+    updatePassword(userId: number, hashedPassword: string): Promise<any>;
     delete(id: number): Promise<any>;
 }

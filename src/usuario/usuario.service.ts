@@ -1,10 +1,11 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import * as bcrypt from 'bcrypt';
 import { User } from './usuario.entity';
 import { IUsuarioRepositoryToken } from './repositories/usuario.repository.interface';
 import type { IUsuarioRepository } from './repositories/usuario.repository.interface';
+import { Role } from '../common/enums/roles.enums';
 
 
 @Injectable()
@@ -43,7 +44,27 @@ export class UsuarioService {
     return this.repo.update(id, data);
   }
 
+  async changePassword(email: string, oldPassword: string, newPassword: string) {
+    // Necesitamos el password hasheado para comparar, por eso usamos findByEmailWithPassword
+    const userWithPassword: any = await this.repo.findByEmailWithPassword(email);
+    if (!userWithPassword) {
+      throw new BadRequestException('Usuario no encontrado');
+    }
+
+    const passwordMatch = await bcrypt.compare(oldPassword, userWithPassword.password);
+    if (!passwordMatch) {
+      throw new BadRequestException('Contraseña actual incorrecta');
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // userWithPassword.id normalmente es number (id de Prisma)
+    await this.repo.updatePassword(userWithPassword.id, hashedNewPassword);
+
+    return { success: true, message: 'Contraseña cambiada correctamente' };
+  }
+
   async remove(id: number): Promise<void> {
-    this.repo.delete(id);
+    await this.repo.delete(id);
   }
 }
