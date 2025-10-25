@@ -8,6 +8,7 @@ export interface IProveedorRepository {
   findAll(): Promise<Proveedor[]>;
   findById(id: number): Promise<Proveedor | null>;
   findByCode(code: string): Promise<Proveedor | null>;
+  findByEmail(email: string): Promise<Proveedor | null>;
   create(createProveedorDto: CreateProveedorDto): Promise<Proveedor>;
   update(id: number, updateProveedorDto: UpdateProductoDto): Promise<Proveedor>;
   delete(id: number): Promise<void>;

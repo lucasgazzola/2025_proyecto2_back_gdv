@@ -8,9 +8,20 @@ import { CreateProveedorDto } from '../dto/create-proveedor.dto';
 
 @Injectable()
 export class PrismaProveedorRepository implements IProveedorRepository {
+  async findByEmail(email: string): Promise<Proveedor | null> {
+    const proveedor = await prisma.provider.findUnique({
+      where: { email },
+    });
+
+    if (!proveedor) {
+      return null;
+    }
+
+    return ProveedorMapper.toDomain(proveedor);
+  }
   async findByCode(code: string): Promise<Proveedor | null> {
     const proveedor = await prisma.provider.findUnique({
-      where: { code, isActive: true },
+      where: { code },
     });
 
     if (!proveedor) {

@@ -24,8 +24,15 @@ export class ProveedorService {
   }
 
   async create(createProveedorDto: CreateProveedorDto): Promise<Proveedor> {
-    const existing = await this.repo.findByCode(createProveedorDto.code);
-    if (existing) throw new ConflictException('Proveedor ya existe');
+    const existingCode = await this.repo.findByCode(createProveedorDto.code);
+
+    if (existingCode)
+      throw new ConflictException('Código de proveedor ya existe');
+
+    const existingEmail = await this.repo.findByEmail(createProveedorDto.email);
+
+    if (existingEmail)
+      throw new ConflictException('Email de proveedor ya existe');
 
     return this.repo.create(createProveedorDto);
   }
@@ -35,6 +42,15 @@ export class ProveedorService {
     if (!existing) {
       throw new NotFoundException('Proveedor no encontrado');
     }
+    const existingEmail = await this.repo.findByEmail(updateProveedorDto.email);
+    if (existingEmail && existingEmail.id !== id) {
+      throw new ConflictException('Email de proveedor ya existe');
+    }
+    const existingCode = await this.repo.findByCode(updateProveedorDto.code);
+    if (existingCode && existingCode.id !== id) {
+      throw new ConflictException('Código de proveedor ya existe');
+    }
+
     return this.repo.update(id, updateProveedorDto);
   }
 

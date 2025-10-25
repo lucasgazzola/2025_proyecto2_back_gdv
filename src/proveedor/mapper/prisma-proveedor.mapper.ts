@@ -10,6 +10,7 @@ export class ProveedorMapper {
       email: proveedor.email,
       phone: proveedor.phone,
       address: proveedor.address,
+      city: proveedor.city,
       createdAt: proveedor.createdAt,
       updatedAt: proveedor.updatedAt,
     };
