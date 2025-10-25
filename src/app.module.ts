@@ -10,9 +10,21 @@ import { LogsModule } from './logs/logs.module';
 import { AuthModule } from './auth/auth.module';
 import { ProveedorModule } from './proveedor/proveedor.module';
 import { ClienteModule } from './cliente/cliente.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
+import { join } from 'path';
 @Module({
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'), // carpeta a exponer
+      serveRoot: '/uploads', // URL base pública
+      exclude: ['/api*'], // evitar interceptar rutas API
+      serveStaticOptions: {
+        index: false, // no listar índices
+        extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'],
+        redirect: false,
+      },
+    }),
     MarcaModule,
     CategoriaModule,
     ProductoModule,

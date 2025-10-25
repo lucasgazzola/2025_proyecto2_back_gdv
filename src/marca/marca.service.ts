@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { CreateMarcaDto } from './dto/create-marca.dto';
 import { UpdateMarcaDto } from './dto/update-marca.dto';
 import type { IMarcaRepository } from './repositories/marca.repository.interface';
@@ -13,9 +13,8 @@ export class MarcaService {
   ) {}
 
   async create(dto: CreateMarcaDto) {
-
-    const existente = await this.repo.findByName(dto.name);
-    if (existente) throw new Error('Marca ya existente');
+    const existente = await this.repo.findByName(dto.name.trim());
+    if (existente) throw new ConflictException('Marca ya existente');
 
     return this.repo.create(dto);
   }
@@ -37,8 +36,6 @@ export class MarcaService {
   }
 
   async remove(id: number): Promise<Marca> {
-    
-
     return this.repo.delete(id);
   }
 }
