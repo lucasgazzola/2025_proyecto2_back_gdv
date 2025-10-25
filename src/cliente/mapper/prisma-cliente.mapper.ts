@@ -14,6 +14,7 @@ export class ClienteMapper {
       phone: cliente.phone,
       address: cliente.address,
       city: cliente.city,
+      isActive: cliente.isActive,
       createdAt: cliente.createdAt,
       updatedAt: cliente.updatedAt,
     };
@@ -36,7 +37,7 @@ export class ClienteMapper {
 
   static toCreatePersistence(
     cliente: CreateClienteDto,
-  ): Omit<Cliente, 'id' | 'createdAt' | 'updatedAt'> {
+  ): Omit<Cliente, 'id' | 'createdAt' | 'updatedAt' | 'isActive'> {
     return {
       firstName: cliente.firstName,
       lastName: cliente.lastName,

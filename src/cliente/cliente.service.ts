@@ -31,7 +31,7 @@ export class ClienteService {
 
   async delete(id: number): Promise<Cliente> {
     const exists = await this.repo.findById(id);
-    if (!exists) {
+    if (!exists || !exists.isActive) {
       throw new NotFoundException('Cliente no encontrado');
     }
     return this.repo.delete(id);

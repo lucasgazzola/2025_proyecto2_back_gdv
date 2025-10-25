@@ -5,6 +5,7 @@ export class Cliente {
     public lastName: string,
     public email: string,
     public dni: string,
+    public isActive?: boolean,
     public phone?: string,
     public address?: string,
     public city?: string,

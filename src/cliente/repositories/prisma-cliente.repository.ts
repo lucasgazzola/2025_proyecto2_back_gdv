@@ -38,19 +38,25 @@ export class PrismaClienteRepository implements IClienteRepository {
   }
 
   async findAll(): Promise<Cliente[]> {
-    const clientes = await prisma.customer.findMany();
+    const clientes = await prisma.customer.findMany({
+      where: { isActive: true },
+    });
 
     return clientes.map(ClienteMapper.toDomain);
   }
 
   async findById(id: number): Promise<Cliente | null> {
-    const cliente = await prisma.customer.findUnique({ where: { id } });
+    const cliente = await prisma.customer.findUnique({
+      where: { id, isActive: true },
+    });
 
     return cliente ? ClienteMapper.toDomain(cliente) : null;
   }
 
   async findByEmail(email: string): Promise<Cliente | null> {
-    const cliente = await prisma.customer.findUnique({ where: { email } });
+    const cliente = await prisma.customer.findUnique({
+      where: { email, isActive: true },
+    });
 
     return cliente ? ClienteMapper.toDomain(cliente) : null;
   }
