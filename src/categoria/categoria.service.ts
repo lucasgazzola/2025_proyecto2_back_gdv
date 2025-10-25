@@ -54,7 +54,7 @@ export class CategoriaService {
 
   async delete(id: number): Promise<void> {
     const existing = await this.repo.findById(id);
-    if (!existing) {
+    if (!existing || !existing.isActive) {
       throw new BadRequestException('Categoría no encontrada');
     }
     return await this.repo.delete(id);

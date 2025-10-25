@@ -55,11 +55,14 @@ export class PrismaCategoriaRepository implements ICategoriaRepository {
   }
 
   async findAll(): Promise<Categoria[]> {
-    const categorias = await prisma.category.findMany();
+    const categorias = await prisma.category.findMany({
+      where: { isActive: true },
+    });
     return categorias.map(CategoriaMapper.toDomain);
   }
 
   async findById(id: number): Promise<Categoria | null> {
-    return await prisma.category.findUnique({ where: { id } });
+    const categoria = await prisma.category.findUnique({ where: { id } });
+    return categoria ? CategoriaMapper.toDomain(categoria) : null;
   }
 }
