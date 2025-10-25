@@ -1,4 +1,4 @@
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class CreateProveedorDto {
   @IsString()
@@ -7,14 +7,14 @@ export class CreateProveedorDto {
   @IsString()
   name: string;
 
-  @IsString()
+  @IsEmail()
   email: string;
 
   @IsString()
   @IsOptional()
   address?: string;
 
-  @IsBoolean()
+  @IsString()
   @IsOptional()
-  city?: boolean;
+  city?: string;
 }

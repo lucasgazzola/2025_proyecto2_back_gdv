@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { Proveedor } from './proveedor.entity';
 import { NotFoundException } from '@nestjs/common';
 import { IProveedorRepositoryToken } from './repositories/proveedor.repository.interface';
@@ -24,6 +24,9 @@ export class ProveedorService {
   }
 
   async create(createProveedorDto: CreateProveedorDto): Promise<Proveedor> {
+    const existing = await this.repo.findByCode(createProveedorDto.code);
+    if (existing) throw new ConflictException('Proveedor ya existe');
+
     return this.repo.create(createProveedorDto);
   }
 

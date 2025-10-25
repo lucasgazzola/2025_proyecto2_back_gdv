@@ -6,6 +6,7 @@ export class ProveedorMapper {
     return {
       id: proveedor.id,
       name: proveedor.name,
+      code: proveedor.code,
       email: proveedor.email,
       phone: proveedor.phone,
       address: proveedor.address,

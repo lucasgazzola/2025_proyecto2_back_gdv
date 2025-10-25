@@ -3,6 +3,7 @@ import { Producto } from 'src/producto/producto.entity';
 export class Proveedor {
   public readonly id: number;
   public name: string;
+  public code: string;
   public email?: string;
   public phone?: string;
   public address?: string;
