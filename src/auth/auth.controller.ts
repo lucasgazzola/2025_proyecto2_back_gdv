@@ -33,5 +33,9 @@ export class AuthController {
   async forgotPassword(@Body('email') email: string) {
     return this.authService.sendPasswordResetEmail(email);
   }
-}
 
+  @Post('validate-token')
+  async validateToken(@Body('token') token: string) {
+    return this.authService.validateToken(token);
+  }
+}

@@ -32,7 +32,14 @@ export class MarcaMapper {
       name: marca.name.trim(),
       logo: marca.logo,
       description: marca.description?.trim(),
-      isActive: marca.isActive ?? true,
+      // Cuando el DTO viene de multipart/form-data el campo booleano puede llegar como string.
+      // Normalizamos aquí: acepta true/false booleanos o 'true'/'false' strings.
+      isActive:
+        marca.isActive === undefined
+          ? true
+          : String(marca.isActive).toLowerCase() === 'true'
+            ? true
+            : Boolean(marca.isActive),
     };
   }
 
@@ -42,7 +49,11 @@ export class MarcaMapper {
     if (marca.logo !== undefined) data.logo = marca.logo;
     if (marca.description !== undefined)
       data.description = marca.description?.trim();
-    if (marca.isActive !== undefined) data.isActive = marca.isActive;
+    if (marca.isActive !== undefined)
+      data.isActive =
+        String(marca.isActive).toLowerCase() === 'true'
+          ? true
+          : Boolean(marca.isActive);
     return data;
   }
 }

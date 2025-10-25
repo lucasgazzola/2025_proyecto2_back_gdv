@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, HttpException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  HttpException,
+} from '@nestjs/common';
 import { UsuarioService } from '../usuario/usuario.service';
 import * as bcrypt from 'bcrypt';
 import { RegisterAuthDto } from './dto/register.dto';
@@ -18,10 +22,9 @@ export class AuthService {
     private usersService: UsuarioService,
     private mailService: MailService,
     private logsService: LogsService,
-  ) { }
+  ) {}
 
   async register(body: RegisterAuthDto) {
-
     const userExists = await this.usersService.findByEmail(body.email);
 
     if (userExists) {
@@ -40,7 +43,7 @@ export class AuthService {
       firstName: body.firstName,
       lastName: body.lastName,
       password: hashedPassword,
-      role: body.role ?? Role.USER
+      role: body.role ?? Role.USER,
     });
 
     await this.logsService.createSuccessLog(
@@ -49,7 +52,7 @@ export class AuthService {
       `Usuario registrado: ${newUser.email} con rol ${newUser.role}`,
     );
 
-    const {password, ...result} = newUser;
+    const { password, ...result } = newUser;
 
     return result;
   }
@@ -82,7 +85,11 @@ export class AuthService {
       `Usuario ${user.email} inició sesión exitosamente`,
     );
 
-    const payload: TokenPayload = { id: user.id, role: user.role, email: user.email };
+    const payload: TokenPayload = {
+      id: user.id,
+      role: user.role,
+      email: user.email,
+    };
     return {
       accessToken: this.generateToken(payload, 'auth'),
       refreshToken: this.generateToken(payload, 'refresh'),
@@ -90,31 +97,42 @@ export class AuthService {
   }
 
   logout() {
-  return { message: 'Sesión cerrada correctamente' };
+    return { message: 'Sesión cerrada correctamente' };
   }
 
-  generateToken(payload: TokenPayload, type: 'auth' | 'refresh' | 'reset'): string {
-
+  generateToken(
+    payload: TokenPayload,
+    type: 'auth' | 'refresh' | 'reset',
+  ): string {
     const secret: string = config[type].secret;
     const expiresIn: string = config[type].expiresIn;
 
-    return jwt.sign(payload as object, secret, { expiresIn } as jwt.SignOptions);
+    return jwt.sign(payload as object, secret, {
+      expiresIn,
+    } as jwt.SignOptions);
   }
 
   async refreshToken(refreshToken: string) {
     try {
-      const payload = jwt.verify(refreshToken, config.refresh.secret) as Payload;
+      const payload = jwt.verify(
+        refreshToken,
+        config.refresh.secret,
+      ) as Payload;
 
       const user = await this.usersService.findByEmail(payload.email);
 
-      if (!user){
+      if (!user) {
         throw new UnauthorizedException('Token inválido o expirado');
       }
 
       const currentTime = Math.floor(Date.now() / 1000);
       const timeToExpire = (payload.exp - currentTime) / 60;
 
-      const tokenPayload: TokenPayload = { id: user.id, role: user.role, email: payload.email };
+      const tokenPayload: TokenPayload = {
+        id: user.id,
+        role: user.role,
+        email: payload.email,
+      };
 
       if (timeToExpire < 20) {
         return {
@@ -136,16 +154,25 @@ export class AuthService {
   }
 
   async sendPasswordResetEmail(email: string) {
-  const user = await this.usersService.findByEmail(email);
-  if (!user) return;
+    const user = await this.usersService.findByEmail(email);
+    if (!user) return;
 
-  const token = this.generateToken({ email }, 'reset');
+    const token = this.generateToken({ email }, 'reset');
 
-  const resetLink = `https://localhost:3000/api/auth/reset-password?token=${token}`;
-  await this.mailService.send({
-    to: email,
-    subject: 'Recuperación de contraseña',
-    html: `<p>Haz clic <a href="${resetLink}">aquí</a> para restablecer tu contraseña.</p>`,
-  });
-}
+    const resetLink = `https://localhost:3000/api/auth/reset-password?token=${token}`;
+    await this.mailService.send({
+      to: email,
+      subject: 'Recuperación de contraseña',
+      html: `<p>Haz clic <a href="${resetLink}">aquí</a> para restablecer tu contraseña.</p>`,
+    });
+  }
+
+  async validateToken(token: string) {
+    try {
+      const payload = jwt.verify(token, config.reset.secret) as Payload;
+      return { valid: true, email: payload.email };
+    } catch (error) {
+      return { valid: false };
+    }
+  }
 }

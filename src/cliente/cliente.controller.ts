@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Request,
+  UseGuards,
 } from '@nestjs/common';
 import { ClienteService } from './cliente.service';
 import { Roles } from 'src/auth/roles.decorators';
@@ -15,8 +16,11 @@ import { CreateClienteDto } from './dto/create-cliente.dto';
 import { LogsService } from 'src/logs/logs.service';
 import { Role } from 'src/common/enums/roles.enums';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
+import { JwtAuthGuard } from 'src/auth/auth-roles.guard';
+import { RolesGuard } from 'src/auth/roles.guard';
 
-@Controller('cliente')
+@Controller('clientes')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ClienteController {
   // Implementación del controlador de cliente
   constructor(
@@ -25,7 +29,7 @@ export class ClienteController {
   ) {}
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.USER)
   async create(@Body() createClienteDto: CreateClienteDto, @Request() req) {
     const result = await this.service.create(createClienteDto);
     await this.logsService.createSuccessLog(
@@ -37,25 +41,25 @@ export class ClienteController {
   }
 
   @Get()
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.USER)
   findAll() {
     return this.service.findAll();
   }
 
-  @Get('email/:email')
-  @Roles(Role.ADMIN)
+  @Get(':email')
+  @Roles(Role.ADMIN, Role.USER)
   findByEmail(@Param('email') email: string) {
     return this.service.findByEmail(email);
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.USER)
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.service.findById(id);
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.USER)
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateClienteDto: UpdateClienteDto,
@@ -71,7 +75,7 @@ export class ClienteController {
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.USER)
   async remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const result = await this.service.delete(id);
     await this.logsService.createSuccessLog(

@@ -5,15 +5,18 @@ import { Cliente } from 'src/cliente/cliente.entity';
 
 export class ClienteMapper {
   static toDomain(cliente: any): Cliente {
-    return new Cliente(
-      cliente.id,
-      cliente.name,
-      cliente.createdAt,
-      cliente.updatedAt,
-      cliente.logo,
-      cliente.description,
-      cliente.isActive,
-    );
+    return {
+      id: cliente.id,
+      firstName: cliente.firstName,
+      lastName: cliente.lastName,
+      email: cliente.email,
+      dni: cliente.dni,
+      phone: cliente.phone,
+      address: cliente.address,
+      city: cliente.city,
+      createdAt: cliente.createdAt,
+      updatedAt: cliente.updatedAt,
+    };
   }
 
   static toPersistence(cliente: Cliente): any {
