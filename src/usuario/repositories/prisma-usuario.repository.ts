@@ -59,5 +59,13 @@ export class PrismaUsuarioRepository implements IUsuarioRepository {
         return UsuarioMapper.toDomain(user);
     }
 
+    async updatePassword(userId: number, hashedPassword: string): Promise<User> {
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword },
+        });
+        return UsuarioMapper.toDomain(user);
+    }
+
 
 }
