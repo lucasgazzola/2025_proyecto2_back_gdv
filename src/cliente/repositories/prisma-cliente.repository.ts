@@ -29,7 +29,10 @@ export class PrismaClienteRepository implements IClienteRepository {
   }
 
   async delete(id: number): Promise<Cliente> {
-    const cliente = await prisma.customer.delete({ where: { id } });
+    const cliente = await prisma.customer.update({
+      where: { id },
+      data: { isActive: false },
+    });
 
     return ClienteMapper.toDomain(cliente);
   }

@@ -60,6 +60,7 @@ model Category {
   description String?
   products  Product[]
   createdAt DateTime @default(now())
+  isActive  Boolean  @default(true)
   updatedAt DateTime @updatedAt
 }
 
@@ -77,19 +78,20 @@ model Product {
   invoiceDetails InvoiceDetail[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  isActive      Boolean         @default(true)
 }
 
 model Provider {
   id            Int             @id @default(autoincrement())
+  code          String          @unique
   name          String
-  email         String?
-  phone         String?
+  email         String          @unique
   address       String?
   city          String?
   products      Product[]
-  invoiceDetails InvoiceDetail[]
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
+  isActive      Boolean         @default(true)
 }
 
 model Customer {
@@ -104,6 +106,13 @@ model Customer {
   invoices  Invoice[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  isActive  Boolean  @default(true)
+}
+
+enum InvoiceState {
+  PENDING
+  PAID
+  CANCELLED
 }
 
 model Invoice {
@@ -115,6 +124,7 @@ model Invoice {
   customerId  Int
   total       Float
   items       InvoiceDetail[]
+  state      InvoiceState    @default(PENDING)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 }
@@ -126,8 +136,6 @@ model InvoiceDetail {
   invoiceId   Int
   product     Product  @relation(fields: [productId], references: [id])
   productId   Int
-  provider    Provider @relation(fields: [providerId], references: [id])
-  providerId  Int
   quantity    Int
   unitPrice   Float
   subtotal    Float

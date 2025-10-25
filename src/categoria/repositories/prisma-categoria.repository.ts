@@ -46,7 +46,12 @@ export class PrismaCategoriaRepository implements ICategoriaRepository {
   }
 
   async delete(id: number): Promise<void> {
-    await prisma.category.delete({ where: { id } });
+    await prisma.category.update({
+      where: { id },
+      data: {
+        isActive: false,
+      },
+    });
   }
 
   async findAll(): Promise<Categoria[]> {
