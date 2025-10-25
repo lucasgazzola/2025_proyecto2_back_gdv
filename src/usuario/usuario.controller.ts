@@ -37,7 +37,7 @@ export class UsuarioController {
   }
 
   @Post()
-  @Roles(Role.AUDITOR)
+  @Roles(Role.ADMIN)
   async create(@Body() createUsuarioDto: CreateUsuarioDto, @Request() req) {
     const result = await this.usuarioService.create(createUsuarioDto);
     await this.logsService.createSuccessLog(
@@ -49,24 +49,30 @@ export class UsuarioController {
   }
 
   @Get()
-  @Roles(Role.AUDITOR)
+  @Roles(Role.ADMIN)
   findAll() {
     return this.usuarioService.findAll();
   }
 
   @Get('email/:email')
-  @Roles(Role.AUDITOR)
+  @Roles(Role.ADMIN)
   findByEmail(@Param('email') email: string) {
     return this.usuarioService.findByEmail(email);
   }
 
   @Get(':id')
+  @Roles(Role.ADMIN)
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.usuarioService.findById(id);
   }
-  
+
   @Patch(':id')
-  async update(@Param('id', ParseIntPipe) id: number, @Body() updateUsuarioDto: UpdateUsuarioDto, @Request() req) {
+  @Roles(Role.ADMIN)
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUsuarioDto: UpdateUsuarioDto,
+    @Request() req,
+  ) {
     const result = await this.usuarioService.update(id, updateUsuarioDto);
     await this.logsService.createSuccessLog(
       'UPDATE_USER',
@@ -77,7 +83,7 @@ export class UsuarioController {
   }
 
   @Delete(':id')
-  @Roles(Role.AUDITOR)
+  @Roles(Role.ADMIN)
   async remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const result = await this.usuarioService.remove(id);
     await this.logsService.createSuccessLog(
@@ -97,7 +103,9 @@ export class UsuarioController {
   ) {
     // req.user.email debe ser string
     if (String(req.user.email) !== email) {
-      throw new BadRequestException('No autorizado para cambiar esta contraseña');
+      throw new BadRequestException(
+        'No autorizado para cambiar esta contraseña',
+      );
     }
 
     // dto ya validado: dto.old_password, dto.new_password, dto.password_confirm
@@ -105,7 +113,11 @@ export class UsuarioController {
       throw new BadRequestException('Las contraseñas nuevas no coinciden');
     }
 
-    const result = await this.usuarioService.changePassword(email, dto.old_password, dto.new_password);
+    const result = await this.usuarioService.changePassword(
+      email,
+      dto.old_password,
+      dto.new_password,
+    );
 
     // registrar log de éxito
     await this.logsService.createSuccessLog(
