@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   type IClienteRepository,
   IClienteRepositoryToken,
@@ -15,7 +20,18 @@ export class ClienteService {
   ) {}
 
   async create(createClienteDto: CreateClienteDto): Promise<Cliente> {
-    return this.repo.create(createClienteDto);
+    const existsEmail = await this.repo.findByEmail(createClienteDto.email);
+    if (existsEmail) {
+      throw new ConflictException('El email ya está en uso');
+    }
+
+    const existsDni = await this.repo.findByDni(createClienteDto.dni);
+
+    if (existsDni) {
+      throw new ConflictException('El DNI ya está en uso');
+    }
+
+    return await this.repo.create(createClienteDto);
   }
 
   async update(
@@ -26,6 +42,21 @@ export class ClienteService {
     if (!exists) {
       throw new NotFoundException('Cliente no encontrado');
     }
+
+    if (updateClienteDto.email) {
+      const existsEmail = await this.repo.findByEmail(updateClienteDto.email);
+      if (existsEmail && existsEmail.id !== id) {
+        throw new ConflictException('El email ya está en uso');
+      }
+    }
+
+    if (updateClienteDto.dni) {
+      const existsDni = await this.repo.findByDni(updateClienteDto.dni);
+      if (existsDni && existsDni.id !== id) {
+        throw new ConflictException('El DNI ya está en uso');
+      }
+    }
+
     return this.repo.update(id, updateClienteDto);
   }
 
