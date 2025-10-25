@@ -2,10 +2,13 @@ import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateProveedorDto {
   @IsString()
+  code: string;
+
+  @IsString()
   name: string;
 
   @IsString()
-  code: string;
+  email: string;
 
   @IsString()
   @IsOptional()

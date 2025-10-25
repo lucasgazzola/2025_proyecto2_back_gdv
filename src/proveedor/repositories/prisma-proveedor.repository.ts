@@ -1,24 +1,57 @@
-import { Injectable } from "@nestjs/common";
-import { Proveedor } from "../proveedor.entity";
-import { prisma } from "src/common/config/db-client";
-import { ProveedorMapper } from "../mapper/prisma-proveedor.mapper";
-import { IProveedorRepository } from "./proveedor.repository.interface";
-
+import { Injectable } from '@nestjs/common';
+import { Proveedor } from '../proveedor.entity';
+import { prisma } from 'src/common/config/db-client';
+import { ProveedorMapper } from '../mapper/prisma-proveedor.mapper';
+import { IProveedorRepository } from './proveedor.repository.interface';
+import { UpdateProductoDto } from 'src/producto/dto/update-producto.dto';
+import { CreateProveedorDto } from '../dto/create-proveedor.dto';
 
 @Injectable()
 export class PrismaProveedorRepository implements IProveedorRepository {
+  async create(createProveedorDto: CreateProveedorDto): Promise<Proveedor> {
+    const proveedor = prisma.provider.create({
+      data: ProveedorMapper.toPersistence(createProveedorDto),
+    });
 
-    async findAll(): Promise<Proveedor[]> {
+    return ProveedorMapper.toDomain(proveedor);
+  }
 
-        const proveedores = await prisma.provider.findMany();
+  async update(
+    id: number,
+    updateProveedorDto: UpdateProductoDto,
+  ): Promise<Proveedor> {
+    const proveedor = await prisma.provider.update({
+      where: { id },
+      data: ProveedorMapper.toUpdatePersistence(updateProveedorDto),
+    });
 
-        return proveedores.map(ProveedorMapper.toDomain);
+    return ProveedorMapper.toDomain(proveedor);
+  }
+
+  async delete(id: number): Promise<void> {
+    await prisma.provider.update({
+      where: { id },
+      data: {
+        isActive: false,
+      },
+    });
+  }
+
+  async findAll(): Promise<Proveedor[]> {
+    const proveedores = await prisma.provider.findMany({
+      where: { isActive: true },
+    });
+
+    return proveedores.map(ProveedorMapper.toDomain);
+  }
+
+  async findById(id: number): Promise<Proveedor | null> {
+    const proveedor = await prisma.provider.findUnique({ where: { id } });
+
+    if (!proveedor || !proveedor.isActive) {
+      return null;
     }
 
-    async findById(id: number): Promise<Proveedor | null> {
-
-        const proveedor = await prisma.provider.findUnique({ where: { id } });
-
-        return proveedor ? ProveedorMapper.toDomain(proveedor) : null;
-    }
+    return proveedor ? ProveedorMapper.toDomain(proveedor) : null;
+  }
 }
