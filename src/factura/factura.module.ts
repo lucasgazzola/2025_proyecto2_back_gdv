@@ -6,9 +6,17 @@ import { PrismaFacturaRepository } from './repositories/prisma-factura.repositor
 import { ProductoModule } from '../producto/producto.module';
 import { AuthModule } from '../auth/auth.module';
 import { LogsModule } from '../logs/logs.module';
+import { UsuarioModule } from '../usuario/usuario.module';
+import { ClienteModule } from '../cliente/cliente.module';
 
 @Module({
-  imports: [ProductoModule, AuthModule, LogsModule],
+  imports: [
+    ProductoModule,
+    AuthModule,
+    LogsModule,
+    UsuarioModule,
+    ClienteModule,
+  ],
   controllers: [FacturaController],
   providers: [
     FacturaService,

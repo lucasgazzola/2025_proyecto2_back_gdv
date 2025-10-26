@@ -16,5 +16,11 @@ import { AuthModule } from '../auth/auth.module';
       useClass: PrismaClienteRepository,
     },
   ],
+  exports: [
+    {
+      provide: IClienteRepositoryToken,
+      useClass: PrismaClienteRepository,
+    },
+  ],
 })
 export class ClienteModule {}

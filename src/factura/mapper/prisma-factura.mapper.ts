@@ -1,9 +1,6 @@
 import { UsuarioMapper } from '../../usuario/mapper/prisma-usuario.mapper';
+import { ClienteMapper } from '../../cliente/mapper/prisma-cliente.mapper';
 import { ProductoMapper } from '../../producto/mapper/prisma-producto.mapper';
-import {
-  CreateFacturaDto,
-  CreateFacturaItemDto,
-} from '../dto/create-factura.dto';
 import {
   IFacturaCalculada,
   IFacturaItemCalculada,
@@ -27,7 +24,6 @@ export class FacturaItemMapper {
   static toCreatePersistence(facturaItem: IFacturaItemCalculada) {
     return {
       product: { connect: { id: facturaItem.productId } },
-      provider: { connect: { id: facturaItem.providerId } },
       quantity: facturaItem.quantity,
       unitPrice: facturaItem.unitPrice,
       subtotal: facturaItem.subtotal,
@@ -42,7 +38,12 @@ export class FacturaMapper {
       invoiceNumber: factura.invoiceNumber,
       userId: factura.userId,
       user: factura.user ? UsuarioMapper.toDomain(factura.user) : undefined,
-      items: factura.items
+      customerId: factura.customerId,
+      customer: factura.customer
+        ? ClienteMapper.toDomain(factura.customer)
+        : undefined,
+      state: factura.state,
+      invoiceDetails: factura.items
         ? factura.items.map((item) => FacturaItemMapper.toDomain(item))
         : [],
       total: factura.total,
@@ -55,6 +56,9 @@ export class FacturaMapper {
     return {
       invoiceNumber: String(data.invoiceNumber),
       user: data.userId ? { connect: { id: data.userId } } : undefined,
+      customer: data.customerId
+        ? { connect: { id: data.customerId } }
+        : undefined,
       items: {
         create: data.items.map((item) =>
           FacturaItemMapper.toCreatePersistence(item),

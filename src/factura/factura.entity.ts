@@ -9,7 +9,6 @@ export class FacturaItem {
   quantity: number;
   unitPrice: number;
   subtotal: number;
-
 }
 
 export class Factura {
@@ -17,10 +16,11 @@ export class Factura {
   invoiceNumber: number;
   userId: number;
   user: User;
+  customerId?: number;
+  customer?: any;
   total: number;
-  items: FacturaItem[];
+  state?: string;
+  invoiceDetails: FacturaItem[];
   createdAt: Date;
   updatedAt: Date;
-  
 }
-

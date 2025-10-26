@@ -7,6 +7,8 @@ import {
   Delete,
   UseGuards,
   Request,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FacturaService } from './factura.service';
 import { ParseIntPipe } from '../common/pipes/parse-int.pipe';
@@ -25,35 +27,43 @@ export class FacturaController {
   ) {}
 
   @Post()
+  @Roles(Role.ADMIN, Role.USER)
+  // Accept raw body (any) to allow several incoming shapes (product objects, ids with suffixes, customer object)
   async create(@Body() data: any, @Request() req) {
-    const result = await this.service.create(data);
+    const userEmail = req.user.email;
+    if (!userEmail) {
+      throw new ForbiddenException('User email not found in request');
+    }
+    const result = await this.service.create(data, userEmail);
     await this.logsService.createSuccessLog(
       'CREATE_INVOICE',
       req.user.id,
-      `Usuario ${req.user.email} creó factura ID: ${result.id}`,
-    );
-    return result;
-  }
-
-  @Delete(':id')
-  @Roles(Role.AUDITOR)
-  async delete(@Param('id', ParseIntPipe) id: number, @Request() req) {
-    const result = await this.service.delete(id);
-    await this.logsService.createSuccessLog(
-      'DELETE_INVOICE',
-      req.user.id,
-      `Usuario ${req.user.email} eliminó factura ID: ${id}`,
+      `Usuario ${userEmail} creó factura ID: ${result.id}`,
     );
     return result;
   }
 
   @Get()
+  @Roles(Role.ADMIN, Role.USER)
   findAll() {
     return this.service.findAll();
   }
 
   @Get(':id')
+  @Roles(Role.ADMIN, Role.USER)
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.service.findById(id);
+  }
+
+  @Post(':id/state')
+  @Roles(Role.ADMIN, Role.USER)
+  async changeState(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { state: 'PAID' | 'CANCELLED' },
+  ) {
+    if (!body || !body.state) {
+      throw new BadRequestException('state es requerido');
+    }
+    return this.service.changeState(id, body.state);
   }
 }
