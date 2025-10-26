@@ -26,7 +26,7 @@ export class CategoriaService {
   async create(createCategoryDto: CreateCategoriaDto): Promise<Categoria> {
     const existing = await this.repo.findByName(createCategoryDto.name.trim());
     if (existing) {
-      throw new BadRequestException('Categoría con este nombre ya existe');
+      throw new BadRequestException('El nombre de categoría ya existe');
     }
     return await this.repo.create(createCategoryDto);
   }

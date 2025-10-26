@@ -33,7 +33,12 @@ export class AuthService {
         undefined,
         `Intento de registro con email duplicado: ${body.email}`,
       );
-      throw new HttpException('El usuario ya existe', 400);
+      throw new HttpException('El correo ya está registrado', 400);
+    }
+
+    // Confirm passwords match
+    if ((body as any).password !== (body as any).confirmPassword) {
+      throw new HttpException('Las contraseñas no coinciden', 400);
     }
 
     const hashedPassword = await bcrypt.hash(body.password, 10);
@@ -66,7 +71,7 @@ export class AuthService {
         undefined,
         `Intento de login con email inexistente: ${body.email}`,
       );
-      throw new UnauthorizedException('Usuario no encontrado');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
     const isPasswordValid = await bcrypt.compare(body.password, user.password);
 
@@ -76,7 +81,7 @@ export class AuthService {
         user.id,
         `Intento de login con contraseña incorrecta: ${body.email}`,
       );
-      throw new UnauthorizedException('Contraseña incorrecta');
+      throw new UnauthorizedException('Credenciales inválidas');
     }
 
     await this.logsService.createSuccessLog(

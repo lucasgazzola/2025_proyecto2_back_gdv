@@ -1,7 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { FacturaService } from './factura.service';
-import { CreateFacturaDto } from './dto/create-factura.dto';
-import { ParseIntPipe } from 'src/common/pipes/parse-int.pipe';
+import { ParseIntPipe } from '../common/pipes/parse-int.pipe';
 import { JwtAuthGuard } from '../auth/auth-roles.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorators';

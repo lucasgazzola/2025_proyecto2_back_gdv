@@ -5,11 +5,10 @@ import { IProductoRepositoryToken } from './repositories/producto.repository.int
 import type { IProductoRepository } from './repositories/producto.repository.interface';
 import { ProductoValidator } from './producto.validator';
 
-
 @Injectable()
 export class ProductoService {
   constructor(
-    @Inject(IProductoRepositoryToken) 
+    @Inject(IProductoRepositoryToken)
     private readonly productoRepo: IProductoRepository,
     private readonly productoValidator: ProductoValidator,
   ) {}
@@ -18,24 +17,21 @@ export class ProductoService {
     return this.productoRepo.create(dto);
   }
 
-  findAll() {
-    return this.productoRepo.findAll();
+  async findAll() {
+    return await this.productoRepo.findAll();
   }
 
-  findById(id: number) {
-    return this.productoRepo.findById(id);
+  async findById(id: number) {
+    return await this.productoRepo.findById(id);
   }
 
   async update(id: number, dto: UpdateProductoDto) {
-
     await this.productoValidator.validarExistencia(id);
 
     return this.productoRepo.update(id, dto);
-
   }
 
   async delete(id: number) {
-
     await this.productoValidator.validarExistencia(id);
 
     return this.productoRepo.delete(id);

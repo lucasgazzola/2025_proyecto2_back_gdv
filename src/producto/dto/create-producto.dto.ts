@@ -1,21 +1,32 @@
-import { ArrayNotEmpty, IsArray, IsInt, IsNumber, IsOptional, IsPositive, IsString, IsUrl } from "class-validator";
-
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsNotEmpty,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateProductoDto {
   @IsString()
+  @IsNotEmpty({ message: 'El nombre es obligatorio' })
   name: string;
 
   @IsInt()
   @IsOptional()
   stock?: number;
-  
-  @IsNumber()
+
+  @IsNumber({}, { message: 'El precio debe ser un número válido' })
   @IsPositive({ message: 'El precio debe ser mayor a 0' })
   price: number;
 
-  @IsArray()
-  @IsUrl({}, { each: true })
-  imagesURL: string[];
+  @IsNotEmpty({ message: 'La imagen es obligatoria' })
+  @IsString()
+  @IsOptional()
+  imageURL?: string;
 
   @IsInt()
   @IsOptional()
@@ -27,6 +38,7 @@ export class CreateProductoDto {
 
   @IsArray()
   @ArrayNotEmpty({ message: 'Debe tener al menos una categoría' })
+  @Type(() => Number)
   @IsInt({ each: true })
   categoryIds?: number[];
 }

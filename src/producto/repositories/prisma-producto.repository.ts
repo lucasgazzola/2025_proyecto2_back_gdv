@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { IProductoRepository } from './producto.repository.interface';
 import { Producto } from '../producto.entity';
-import { prisma } from 'src/common/config/db-client';
+import { prisma } from '../../common/config/db-client';
 import { ProductoMapper } from '../mapper/prisma-producto.mapper';
 import { CreateProductoDto } from '../dto/create-producto.dto';
 import { UpdateProductoDto } from '../dto/update-producto.dto';
@@ -15,6 +15,7 @@ export class PrismaProductoRepository implements IProductoRepository {
         categories: true,
         provider: true,
       },
+      where: { isActive: true },
     });
     return productos.map(ProductoMapper.toDomain);
   }

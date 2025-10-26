@@ -3,8 +3,8 @@ import { ClienteController } from './cliente.controller';
 import { ClienteService } from './cliente.service';
 import { IClienteRepositoryToken } from './repositories/cliente.repository.interface';
 import { PrismaClienteRepository } from './repositories/prisma-cliente.repository';
-import { LogsModule } from 'src/logs/logs.module';
-import { AuthModule } from 'src/auth/auth.module';
+import { LogsModule } from '../logs/logs.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   controllers: [ClienteController],

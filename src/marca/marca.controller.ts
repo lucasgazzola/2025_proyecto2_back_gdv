@@ -35,6 +35,7 @@ export class MarcaController {
   ) {}
 
   @Post()
+  @Roles(Role.ADMIN, Role.USER)
   @UseInterceptors(
     FileInterceptor('logo', {
       storage: diskStorage({
@@ -81,21 +82,25 @@ export class MarcaController {
   }
 
   @Get()
+  @Roles(Role.ADMIN, Role.USER)
   findAll() {
     return this.service.findAll();
   }
 
   @Get(':id')
+  @Roles(Role.ADMIN, Role.USER)
   findById(@Param('id', ParseIntPipe) id: number) {
     return this.service.findById(id);
   }
 
   @Get(':name')
+  @Roles(Role.ADMIN, Role.USER)
   findByName(@Param('name') name: string) {
     return this.service.findByName(name);
   }
 
   @Patch(':id')
+  @Roles(Role.ADMIN, Role.USER)
   @UseInterceptors(
     FileInterceptor('logo', {
       storage: diskStorage({
@@ -139,6 +144,7 @@ export class MarcaController {
     return result;
   }
 
+  @Roles(Role.ADMIN, Role.USER)
   @Delete(':id')
   async remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const result = await this.service.remove(id);

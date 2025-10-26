@@ -1,4 +1,4 @@
-import { Marca } from 'src/marca/marca.entity';
+import { Marca } from '../marca.entity';
 import { CreateMarcaDto } from '../dto/create-marca.dto';
 import { UpdateMarcaDto } from '../dto/update-marca.dto';
 

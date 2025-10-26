@@ -35,6 +35,20 @@ export class UsuarioService {
   }
 
   async update(id: number, dto: UpdateUsuarioDto): Promise<User> {
+    // Ensure user exists
+    const existing = await this.repo.findById(id);
+    if (!existing) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Validate role if provided
+    if ((dto as any).role !== undefined) {
+      const roleValue = (dto as any).role;
+      if (!Object.values(Role).includes(roleValue)) {
+        throw new BadRequestException('Rol no válido');
+      }
+    }
+
     const data = { ...dto };
 
     if (dto.password) {

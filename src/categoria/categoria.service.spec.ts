@@ -1,72 +1,67 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { prisma } from '../common/config/db-client';
-import { CategoriaRepository } from './categoria.repository';
 import { CategoriaService } from './categoria.service';
+import { BadRequestException } from '@nestjs/common';
+import { validate } from 'class-validator';
 
-describe('CategoriaService', () => {
+describe('CategoriaService - gestión de categorías', () => {
   let service: CategoriaService;
+  const mockRepo: any = {
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    findByName: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  };
 
-  beforeAll(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [CategoriaService, CategoriaRepository],
-    }).compile();
-
-    await prisma.category.createMany({ data: [{ name: 'Procesadores', createdAt: new Date(), updatedAt: new Date() },
-      { name: 'Placas Madre', createdAt: new Date(), updatedAt: new Date() }] });
-    service = module.get<CategoriaService>(CategoriaService);
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new CategoriaService(mockRepo);
   });
 
-  afterAll(async () => {
-    await prisma.$disconnect();
+  it('When (1) name empty -> DTO validation message "El nombre es obligatorio"', async () => {
+    const CreateDto = require('./dto/create-categoria.dto').CreateCategoriaDto;
+    const dto = new CreateDto();
+    dto.name = '';
+    dto.description = '';
+
+    const errors = await validate(dto);
+    const messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+    expect(messages).toContain('El nombre es obligatorio');
   });
 
-  it('Debería hacer fetch de las categorias de la db', async () => {
-    const categorias = await service.findAll();
+  it('When (2) name already exists -> service throws "El nombre de categoría ya existe"', async () => {
+    const CreateDto = require('./dto/create-categoria.dto').CreateCategoriaDto;
+    const dto = new CreateDto();
+    dto.name = 'Existing';
 
-    expect(Array.isArray(categorias)).toBe(true);
-    expect(categorias.length).toBeGreaterThanOrEqual(0);
+    mockRepo.findByName.mockResolvedValue({ id: 1, name: 'Existing' });
 
-    if (categorias.length > 0) {
-      expect(categorias[0]).toHaveProperty('id');
-      expect(categorias[0]).toHaveProperty('name');
-    }
+    await expect(service.create(dto as any)).rejects.toThrow(BadRequestException);
+    await expect(service.create(dto as any)).rejects.toThrow('El nombre de categoría ya existe');
   });
 
-  it('debería devolver todas las categorías', async () => {
-    const categorias = await service.findAll();
+  it('When (3) edit category with valid data -> updates correctly', async () => {
+    const existing = { id: 5, name: 'Old', isActive: true };
+    mockRepo.findById.mockResolvedValue(existing);
+    mockRepo.findByName.mockResolvedValue(null);
+    const updated = { id: 5, name: 'New', isActive: true };
+    mockRepo.update.mockResolvedValue(updated);
 
-    expect(categorias).toBeDefined();
-    expect(categorias.map(c => c.name)).toContain('Procesadores');
+    const result = await service.update(5, { name: 'New' } as any);
+    expect(mockRepo.update).toHaveBeenCalledWith(5, expect.objectContaining({ name: 'New' }));
+    expect(result).toEqual(updated);
   });
 
-  it('debería encontrar una categoría por ID válido', async () => {
-    const categoria = await service.findById(1);
+  it('When (4) delete existing category -> deletes and list updates', async () => {
+    const existing = { id: 9, name: 'ToDelete', isActive: true };
+    mockRepo.findById.mockResolvedValue(existing);
+    mockRepo.delete.mockResolvedValue(undefined);
+    mockRepo.findAll.mockResolvedValue([{ id: 1, name: 'A' }]);
 
-    expect(categoria).toBeDefined();
-    expect(categoria?.name).toBe('Procesadores');
-  });
+    await service.delete(9);
+    expect(mockRepo.delete).toHaveBeenCalledWith(9);
 
-  it('debería devolver null si el ID no existe', async () => {
-
-    const categoria = await service.findById(999);
-    expect(categoria).toBeNull();
-  });
-
-  it('todas las categorías deberían tener nombre y descripción', async () => {
-    const categorias = await service.findAll();
-
-    for (const cat of categorias) {
-      expect(cat.name).toBeDefined();
-      expect(typeof cat.name).toBe('string');
-    }
-  });
-
-  it('los IDs deberían ser únicos y consecutivos', async () => {
-    const categorias = await service.findAll();
-    const ids = categorias.map(c => c.id);
-    const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(ids.length);
-    expect(Math.min(...ids)).toBe(1);
-    expect(Math.max(...ids)).toBe(ids.length);
+    const list = await service.findAll();
+    expect(list).toEqual([{ id: 1, name: 'A' }]);
   });
 });

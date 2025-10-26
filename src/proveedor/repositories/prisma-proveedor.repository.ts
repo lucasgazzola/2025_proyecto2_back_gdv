@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Proveedor } from '../proveedor.entity';
-import { prisma } from 'src/common/config/db-client';
+import { prisma } from '../../common/config/db-client';
 import { ProveedorMapper } from '../mapper/prisma-proveedor.mapper';
 import { IProveedorRepository } from './proveedor.repository.interface';
-import { UpdateProductoDto } from 'src/producto/dto/update-producto.dto';
+import { UpdateProductoDto } from '../../producto/dto/update-producto.dto';
 import { CreateProveedorDto } from '../dto/create-proveedor.dto';
 
 @Injectable()

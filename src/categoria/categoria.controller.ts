@@ -14,8 +14,8 @@ import { JwtAuthGuard } from '../auth/auth-roles.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto';
-import { Role } from 'src/common/enums/roles.enums';
-import { Roles } from 'src/auth/roles.decorators';
+import { Role } from '../common/enums/roles.enums';
+import { Roles } from '../auth/roles.decorators';
 
 @Controller('categorias')
 @UseGuards(JwtAuthGuard, RolesGuard)

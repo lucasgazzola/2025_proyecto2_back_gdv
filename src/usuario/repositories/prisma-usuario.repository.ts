@@ -1,6 +1,6 @@
 import { User } from '../usuario.entity';
 import { IUsuarioRepository } from './usuario.repository.interface';
-import { prisma } from 'src/common/config/db-client';
+import { prisma } from '../../common/config/db-client';
 import { UsuarioMapper } from '../mapper/prisma-usuario.mapper';
 import { CreateUsuarioDto } from '../dto/create-usuario.dto';
 import { UpdateUsuarioDto } from '../dto/update-usuario.dto';

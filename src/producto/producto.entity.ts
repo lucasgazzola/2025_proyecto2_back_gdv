@@ -8,7 +8,7 @@ export class Producto {
   public price: number;
   public stock: number;
   public description?: string;
-  public imagesURL: string[];
+  public imageURL: string;
   public brandId?: number;
   public brand?: Marca;
   public categories: Categoria[];
@@ -16,5 +16,4 @@ export class Producto {
   public provider?: Proveedor;
   public readonly createdAt: Date;
   public readonly updatedAt: Date;
-   
 }

@@ -10,10 +10,10 @@ import {
 } from '@nestjs/common';
 import { ProveedorService } from './proveedor.service';
 import { ParseIntPipe } from '@nestjs/common';
-import { Roles } from 'src/auth/roles.decorators';
-import { Role } from 'src/common/enums/roles.enums';
-import { JwtAuthGuard } from 'src/auth/auth-roles.guard';
-import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from '../auth/roles.decorators';
+import { Role } from '../common/enums/roles.enums';
+import { JwtAuthGuard } from '../auth/auth-roles.guard';
+import { RolesGuard } from '../auth/roles.guard';
 import { UpdateProveedorDto } from './dto/update-proveedor.dto';
 import { CreateProveedorDto } from './dto/create-proveedor.dto';
 

@@ -1,151 +1,262 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { UsuarioService } from '../usuario/usuario.service';
-import { RegisterAuthDto } from './dto/register.dto';
+import { UnauthorizedException } from '@nestjs/common';
 import { LoginAuthDto } from './dto/login.dto';
+import { validate } from 'class-validator';
+// Mock bcrypt at module level to avoid spyOn errors on non-configurable properties
+jest.mock('bcrypt', () => ({
+  compare: jest.fn(),
+  hash: jest.fn(async () => 'hashed'),
+}));
+const bcrypt: any = require('bcrypt');
 import { Role } from '../common/enums/roles.enums';
-import { MailService } from '../common/mail.service';
 
-class MockMailService {
-  sendMail() {
-    return true;
-  }
-}
-
-describe('AuthService', () => {
-  let service: AuthService;
-  let usersService: UsuarioService;
-  let users: any[] = [];
-
-  const mockUsuarioService = {
-    create: jest.fn(async (dto) => {
-      const user = { id: users.length + 1, ...dto };
-      users.push(user);
-      return user;
-    }),
-    findByEmail: jest.fn(async (email) => users.find((u) => u.email === email)),
-    findByEmailWithPassword: jest.fn(async (email) =>
-      users.find((u) => u.email === email),
-    ),
+describe('AuthService (unit)', () => {
+  let authService: AuthService;
+  const mockUsersService: any = {
+    findByEmailWithPassword: jest.fn(),
+    findByEmail: jest.fn(),
+    create: jest.fn(),
+  };
+  const mockMailService: any = { send: jest.fn() };
+  const mockLogsService: any = {
+    createFailureLog: jest.fn(),
+    createSuccessLog: jest.fn(),
   };
 
-  beforeEach(async () => {
-
-    users = [];
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AuthService,
-        {
-          provide: UsuarioService,
-          useValue: mockUsuarioService,
-        },
-        { 
-          provide: MailService, 
-          useClass: MockMailService 
-        },
-      ],
-    }).compile();
-
-    service = module.get<AuthService>(AuthService);
-    usersService = module.get<UsuarioService>(UsuarioService);
+  beforeEach(() => {
+    // Restore any spies/mocks to avoid 'Cannot redefine property' errors
+    jest.restoreAllMocks();
+    jest.clearAllMocks();
+    authService = new AuthService(
+      mockUsersService,
+      mockMailService,
+      mockLogsService,
+    );
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  describe('DTO validation (class-validator)', () => {
+    it('When (1) email empty -> validation message "El email no puede estar vacío"', async () => {
+      const dto = new LoginAuthDto();
+      dto.email = '';
+      dto.password = 'validpass';
+
+      const errors = await validate(dto);
+      const messages = errors.flatMap((e) =>
+        e.constraints ? Object.values(e.constraints) : [],
+      );
+      expect(messages).toContain('El email no puede estar vacío');
+    });
+
+    it('When (2) password empty -> validation message "La contraseña no puede estar vacía"', async () => {
+      const dto = new LoginAuthDto();
+      dto.email = 'user@example.com';
+      dto.password = '';
+
+      const errors = await validate(dto);
+      const messages = errors.flatMap((e) =>
+        e.constraints ? Object.values(e.constraints) : [],
+      );
+      expect(messages).toContain('La contraseña no puede estar vacía');
+    });
+
+    it('When (3) invalid email format -> validation message "El formato del email no es válido"', async () => {
+      const dto = new LoginAuthDto();
+      dto.email = 'usuario@correo';
+      dto.password = 'validpass';
+
+      const errors = await validate(dto);
+      const messages = errors.flatMap((e) =>
+        e.constraints ? Object.values(e.constraints) : [],
+      );
+      expect(messages).toContain('El formato del email no es válido');
+    });
   });
 
-  it('should register a new user', async () => {
-    const dto: RegisterAuthDto = {
-      email: 'test@example.com',
-      name: 'John',
-      lastname: 'Doe',
-      password: '123456',
-      role: Role.USER,
-    };
+  describe('AuthService.login behavior', () => {
+    beforeEach(() => {
+      // default: no user found
+      mockUsersService.findByEmailWithPassword.mockResolvedValue(null);
+    });
 
-    const user = await service.register(dto);
+    it('When (4) valid format but incorrect credentials -> throws UnauthorizedException with "Credenciales inválidas"', async () => {
+      const dto = new LoginAuthDto();
+      dto.email = 'valid@example.com';
+      dto.password = 'wrongpass';
 
-    expect(user).toHaveProperty('id');
-    expect(user.email).toBe(dto.email);
-    expect(user.name).toBe(dto.name);
-    expect(user.lastname).toBe(dto.lastname);
-    expect(user).not.toHaveProperty('password');
+      // Simulate user exists
+      const user = {
+        id: 1,
+        email: dto.email,
+        password: 'hashed',
+        role: Role.USER,
+      };
+      mockUsersService.findByEmailWithPassword.mockResolvedValue(user);
+
+      // Mock bcrypt.compare to return false for wrongpass
+      jest
+        .spyOn(bcrypt, 'compare')
+        .mockImplementation(async (pass: string) => pass === 'correctpass');
+
+      await expect(authService.login(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      await expect(authService.login(dto)).rejects.toThrow(
+        'Credenciales inválidas',
+      );
+    });
+
+    it('When (5) valid credentials -> returns tokens', async () => {
+      const dto = new LoginAuthDto();
+      dto.email = 'valid@example.com';
+      dto.password = 'correctpass';
+
+      const user = {
+        id: 2,
+        email: dto.email,
+        password: 'hashed',
+        role: Role.USER,
+      };
+      mockUsersService.findByEmailWithPassword.mockResolvedValue(user);
+
+      // Mock bcrypt.compare to return true for correctpass
+      jest
+        .spyOn(bcrypt, 'compare')
+        .mockImplementation(async (pass: string) => pass === 'correctpass');
+
+      const result = await authService.login(dto);
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
+    });
   });
 
-  it('should throw if email already exists', async () => {
-    const dto: RegisterAuthDto = {
-      email: 'test2@example.com',
-      name: 'Jane',
-      lastname: 'Smith',
-      password: 'abcdef',
-      role: Role.USER,
-    };
+  describe('AuthService.register behavior', () => {
+    it('When (1) all fields empty -> returns required field messages', async () => {
+      const dto = new (require('./dto/register.dto').RegisterAuthDto)();
+      dto.email = '';
+      dto.firstName = '';
+      dto.lastName = '';
+      dto.password = '';
+      dto.confirmPassword = '';
 
-    await service.register(dto);
+      const errors = await validate(dto);
+      const messages = errors.flatMap((e) =>
+        e.constraints ? Object.values(e.constraints) : [],
+      );
+      // Expect that there are messages for required fields
+      expect(messages).toContain('El email no puede estar vacío');
+      expect(messages).toContain('El nombre no puede estar vacío');
+      expect(messages).toContain('El apellido no puede estar vacío');
+      expect(messages).toContain('La contraseña no puede estar vacía');
+      expect(messages).toContain(
+        'La confirmación de contraseña no puede estar vacía',
+      );
+    });
 
-    await expect(service.register(dto)).rejects.toThrow('El usuario ya existe');
-  });
+    it('When (2) email already exists -> throws "El correo ya está registrado"', async () => {
+      const RegisterDto = require('./dto/register.dto').RegisterAuthDto;
+      const dto = new RegisterDto();
+      dto.email = 'exist@example.com';
+      dto.firstName = 'Nombre';
+      dto.lastName = 'Apellido';
+      dto.password = 'Abc123';
+      dto.confirmPassword = 'Abc123';
 
-  it('should login a user and return tokens', async () => {
-    const registerDto: RegisterAuthDto = {
-      email: 'login@example.com',
-      name: 'Alice',
-      lastname: 'Wonder',
-      password: 'password123',
-      role: Role.USER,
-    };
+      mockUsersService.findByEmail.mockResolvedValue({
+        id: 1,
+        email: dto.email,
+      });
 
-    await service.register(registerDto);
+      await expect(authService.register(dto)).rejects.toThrow(
+        'El correo ya está registrado',
+      );
+    });
 
-    const loginDto: LoginAuthDto = {
-      email: 'login@example.com',
-      password: 'password123',
-    };
+    it('When (3) invalid email format -> returns "Correo electrónico inválido"', async () => {
+      const RegisterDto = require('./dto/register.dto').RegisterAuthDto;
+      const dto = new RegisterDto();
+      dto.email = 'bademail';
+      dto.firstName = 'Nombre';
+      dto.lastName = 'Apellido';
+      dto.password = 'Abc123';
+      dto.confirmPassword = 'Abc123';
 
-    const tokens = await service.login(loginDto);
+      const errors = await validate(dto);
+      const messages = errors.flatMap((e) =>
+        e.constraints ? Object.values(e.constraints) : [],
+      );
+      expect(messages).toContain('Correo electrónico inválido');
+    });
 
-    expect(tokens).toHaveProperty('accessToken');
-    expect(tokens).toHaveProperty('refreshToken');
-    expect(typeof tokens.accessToken).toBe('string');
-    expect(typeof tokens.refreshToken).toBe('string');
-  });
+    it('When (4) password less than 6 chars -> returns "La contraseña debe tener al menos 6 caracteres"', async () => {
+      const RegisterDto = require('./dto/register.dto').RegisterAuthDto;
+      const dto = new RegisterDto();
+      dto.email = 'user@example.com';
+      dto.firstName = 'Nombre';
+      dto.lastName = 'Apellido';
+      dto.password = 'Ab1';
+      dto.confirmPassword = 'Ab1';
 
-  it('should throw if login with wrong password', async () => {
-    const dto: RegisterAuthDto = {
-      email: 'wrongpass@example.com',
-      name: 'Bob',
-      lastname: 'Builder',
-      password: 'builder123',
-      role: Role.USER,
-    };
+      const errors = await validate(dto);
+      const messages = errors.flatMap((e) =>
+        e.constraints ? Object.values(e.constraints) : [],
+      );
+      expect(messages).toContain(
+        'La contraseña debe tener al menos 6 caracteres',
+      );
+    });
 
-    await service.register(dto);
+    it('When (5) password missing uppercase/lowercase/number -> returns "La contraseña no cumple los requisitos de seguridad"', async () => {
+      const RegisterDto = require('./dto/register.dto').RegisterAuthDto;
+      const dto = new RegisterDto();
+      dto.email = 'user@example.com';
+      dto.firstName = 'Nombre';
+      dto.lastName = 'Apellido';
+      dto.password = 'abcdef';
+      dto.confirmPassword = 'abcdef';
 
-    const loginDto: LoginAuthDto = {
-      email: 'wrongpass@example.com',
-      password: 'wrongpassword',
-    };
+      const errors = await validate(dto);
+      const messages = errors.flatMap((e) =>
+        e.constraints ? Object.values(e.constraints) : [],
+      );
+      expect(messages).toContain(
+        'La contraseña no cumple los requisitos de seguridad',
+      );
+    });
 
-    await expect(service.login(loginDto)).rejects.toThrow('Contraseña incorrecta');
-  });
+    it('When (6) password and confirmation different -> throws "Las contraseñas no coinciden"', async () => {
+      const RegisterDto = require('./dto/register.dto').RegisterAuthDto;
+      const dto = new RegisterDto();
+      dto.email = 'new@example.com';
+      dto.firstName = 'Nombre';
+      dto.lastName = 'Apellido';
+      dto.password = 'Abc123';
+      dto.confirmPassword = 'Xyz123';
 
-  it('should refresh access token', async () => {
-    const dto: RegisterAuthDto = {
-      email: 'refresh@example.com',
-      name: 'Refresh',
-      lastname: 'Token',
-      password: 'refresh123',
-      role: Role.USER,
-    };
+      mockUsersService.findByEmail.mockResolvedValue(null);
 
-    const user = await service.register(dto);
+      await expect(authService.register(dto)).rejects.toThrow(
+        'Las contraseñas no coinciden',
+      );
+    });
 
-    const loginDto: LoginAuthDto = { email: dto.email, password: dto.password };
-    const tokens = await service.login(loginDto);
+    it('When (7) valid registration -> creates user', async () => {
+      const RegisterDto = require('./dto/register.dto').RegisterAuthDto;
+      const dto = new RegisterDto();
+      dto.email = 'ok@example.com';
+      dto.firstName = 'Nombre';
+      dto.lastName = 'Apellido';
+      dto.password = 'Abc123';
+      dto.confirmPassword = 'Abc123';
 
-    const newTokens = service.refreshToken(tokens.refreshToken);
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockResolvedValue({
+        id: 10,
+        email: dto.email,
+        password: 'hashed',
+      });
 
-    expect(newTokens).toHaveProperty('accessToken');
+      const result = await authService.register(dto as any);
+      expect(result).toHaveProperty('email', dto.email);
+    });
   });
 });

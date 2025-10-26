@@ -1,102 +1,45 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { UsuarioService } from  './usuario.service';
-import { CreateUsuarioDto } from  './dto/create-usuario.dto';
+import { UsuarioService } from './usuario.service';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { Role } from '../common/enums/roles.enums';
-import { UsuarioRepository } from './usuario.repository';
 
-describe('UsersService', () => {
+describe('UsuarioService - roles management (unit)', () => {
   let service: UsuarioService;
+  const mockRepo: any = {
+    findById: jest.fn(),
+    findByEmail: jest.fn(),
+    findByEmailWithPassword: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    updatePassword: jest.fn(),
+    delete: jest.fn(),
+  };
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [UsuarioService, UsuarioRepository],
-    }).compile();
-
-    service = module.get<UsuarioService>(UsuarioService);
+  beforeEach(() => {
+    jest.clearAllMocks();
+    service = new UsuarioService(mockRepo);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
+  it('When (1) modifying role of non-existent user -> throws "Usuario no encontrado"', async () => {
+    mockRepo.findById.mockResolvedValue(null);
+    await expect(service.update(123, { role: Role.ADMIN } as any)).rejects.toThrow(NotFoundException);
+    await expect(service.update(123, { role: Role.ADMIN } as any)).rejects.toThrow('Usuario no encontrado');
   });
 
-  it('should create a user', async () => {
-    const dto: CreateUsuarioDto = {
-      email: 'test@example.com',
-      name: 'John',
-      lastname: 'Doe',
-      password: '123456',
-      role: Role.USER,
-    };
-
-    const user = await service.create(dto);
-
-    expect(user).toHaveProperty('id');
-    expect(user.email).toBe(dto.email);
-    // expect(user.password).not.toBe(dto.password); // password debe estar hasheada
+  it('When (2) admin selects invalid role -> throws "Rol no válido"', async () => {
+    // Simulate existing user
+    mockRepo.findById.mockResolvedValue({ id: 5, email: 'a@b.com' });
+    await expect(service.update(5, { role: 'INVALID_ROLE' } as any)).rejects.toThrow(BadRequestException);
+    await expect(service.update(5, { role: 'INVALID_ROLE' } as any)).rejects.toThrow('Rol no válido');
   });
 
-  it('should return all users', async () => {
-    const dto: CreateUsuarioDto = {
-      email: 'test2@example.com',
-      name: 'Jane',
-      lastname: 'Smith',
-      password: 'abcdef',
-      role: Role.USER,
-    };
+  it('When (3) assign valid role -> saves and returns updated user with new role', async () => {
+    const existing = { id: 7, email: 'user@example.com', role: Role.USER };
+    mockRepo.findById.mockResolvedValue(existing);
+    const updated = { ...existing, role: Role.ADMIN };
+    mockRepo.update.mockResolvedValue(updated);
 
-    await service.create(dto);
-    const users = service.findAll();
-
-    expect(users.length).toBe(1);
-    expect(users[0].email).toBe(dto.email);
-  });
-
-  it('should find a user by id', async () => {
-    const dto: CreateUsuarioDto = {
-      email: 'findme@example.com',
-      name: 'Alice',
-      lastname: 'Wonder',
-      password: 'pass123',
-      role: Role.USER,
-    };
-
-    const created = await service.create(dto);
-    const found = service.findOne(created.id);
-
-    expect(found.id).toBe(created.id);
-    expect(found.email).toBe(dto.email);
-  });
-
-  it('should update a user', async () => {
-    const dto: CreateUsuarioDto = {
-      email: 'update@example.com',
-      name: 'Bob',
-      lastname: 'Builder',
-      password: 'builder123',
-      role: Role.USER,
-    };
-
-    const created = await service.create(dto);
-
-    const updated = await service.update(created.id, { name: 'Bobby' });
-
-    expect(updated.name).toBe('Bobby');
-    expect(updated.email).toBe(dto.email);
-  });
-
-  it('should remove a user', async () => {
-    const dto: CreateUsuarioDto = {
-      email: 'delete@example.com',
-      name: 'Delete',
-      lastname: 'Me',
-      password: 'delete123',
-      role: Role.USER,
-    };
-
-    const created = await service.create(dto);
-
-    service.remove(created.id);
-
-    expect(() => service.findOne(created.id)).toThrow();
+    const result = await service.update(existing.id, { role: Role.ADMIN } as any);
+    expect(mockRepo.update).toHaveBeenCalledWith(existing.id, expect.objectContaining({ role: Role.ADMIN }));
+    expect(result).toEqual(updated);
   });
 });

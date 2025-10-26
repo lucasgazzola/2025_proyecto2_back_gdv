@@ -11,13 +11,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClienteService } from './cliente.service';
-import { Roles } from 'src/auth/roles.decorators';
+import { Roles } from '../auth/roles.decorators';
 import { CreateClienteDto } from './dto/create-cliente.dto';
-import { LogsService } from 'src/logs/logs.service';
-import { Role } from 'src/common/enums/roles.enums';
+import { LogsService } from '../logs/logs.service';
+import { Role } from '../common/enums/roles.enums';
 import { UpdateClienteDto } from './dto/update-cliente.dto';
-import { JwtAuthGuard } from 'src/auth/auth-roles.guard';
-import { RolesGuard } from 'src/auth/roles.guard';
+import { JwtAuthGuard } from '../auth/auth-roles.guard';
+import { RolesGuard } from '../auth/roles.guard';
 
 @Controller('clientes')
 @UseGuards(JwtAuthGuard, RolesGuard)

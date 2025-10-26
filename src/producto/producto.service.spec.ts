@@ -1,117 +1,79 @@
 import { ProductoService } from './producto.service';
-import { ProductoRepository } from './producto.repository';
-import { MarcaRepository } from '../marca/marca.repository';
-import { CategoriaRepository } from '../categoria/categoria.repository';
+import { validate } from 'class-validator';
 import { CreateProductoDto } from './dto/create-producto.dto';
-import { UpdateProductoDto } from './dto/update-producto.dto';
 
-describe('ProductoService', () => {
+describe('ProductoService - gestión de productos', () => {
   let service: ProductoService;
+  const mockRepo: any = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  const mockValidator: any = {
+    validarExistencia: jest.fn(),
+  };
 
   beforeEach(() => {
-    const productoRepo = new ProductoRepository();
-    const marcaRepo = new MarcaRepository();
-    const categoriaRepo = new CategoriaRepository();
-
-    marcaRepo.create({ nombre: 'AMD' });
-    categoriaRepo.findAll();
-
-    service = new ProductoService(productoRepo, marcaRepo, categoriaRepo);
+    jest.clearAllMocks();
+    service = new ProductoService(mockRepo, mockValidator);
   });
 
-  it('debería crear un producto válido', async () => {
-    const dto: CreateProductoDto = {
-      nombre: 'Ryzen 9 7900X',
-      descripcion: 'Procesador de alto rendimiento',
-      precio: 499,
-      imagen: 'https://example.com/ryzen.jpg',
-      marcaId: 1,
-      categoriaIds: [1, 2],
-    };
+  it('When (1) name or image empty -> DTO validation messages', async () => {
+    const dto = new CreateProductoDto();
+    dto.name = '';
+    dto.price = 10;
+    dto.imageURL = '';
+    dto.categoryIds = [1];
 
-    const producto = await service.create(dto);
-    expect(producto).toHaveProperty('id');
-    expect(producto.precio).toBeGreaterThan(0);
-    expect(producto.categorias).toHaveLength(2);
-    expect(producto.marca.nombre).toBe('AMD');
+    const errors = await validate(dto as any);
+    const messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+
+    expect(messages).toContain('El nombre es obligatorio');
+    expect(messages).toContain('La imagen es obligatoria');
   });
 
-  it('debería lanzar error si el precio es 0 o negativo', async () => {
-    const dto: CreateProductoDto = {
-      nombre: 'Ryzen 5',
-      precio: 0,
-      imagen: 'https://example.com/ryzen.jpg',
-      marcaId: 1,
-      categoriaIds: [1],
-    };
+  it('When (2) price with letters/symbols -> returns "El precio debe ser un número válido"', async () => {
+    const dto = new CreateProductoDto();
+    dto.name = 'P';
+    // @ts-ignore assign invalid type
+    dto.price = '12a';
+    dto.imageURL = 'img.png';
+    dto.categoryIds = [1];
 
-    await expect(service.create(dto)).rejects.toThrow(/precio/i);
+    const errors = await validate(dto as any);
+    const messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+    expect(messages).toContain('El precio debe ser un número válido');
   });
 
-  it('debería lanzar error si no hay categorías', async () => {
-    const dto: CreateProductoDto = {
-      nombre: 'Ryzen 5',
-      precio: 200,
-      imagen: 'https://example.com/ryzen.jpg',
-      marcaId: 1,
-      categoriaIds: [],
-    };
-
-    await expect(service.create(dto)).rejects.toThrow(/categoría/i);
+  it('When (3) search by name or brand not found -> service throws "No se encontraron resultados"', async () => {
+    mockRepo.findAll.mockResolvedValue([]);
+    await expect(service.findAll()).rejects.toThrow('No se encontraron resultados');
   });
 
-  it('debería lanzar error si alguna categoría no existe', async () => {
-    const dto: CreateProductoDto = {
-      nombre: 'Ryzen 5',
-      precio: 200,
-      imagen: 'https://example.com/ryzen.jpg',
-      marcaId: 1,
-      categoriaIds: [1, 999],
-    };
+  it('When (4) valid data -> create or update works and reflects changes', async () => {
+    const createDto = new CreateProductoDto();
+    createDto.name = 'Prod';
+    createDto.price = 100;
+    createDto.imageURL = 'img.png';
+    createDto.categoryIds = [1];
 
-    await expect(service.create(dto)).rejects.toThrow(/categoría/i);
-  });
+    const created = { id: 1, name: 'Prod', price: 100 };
+    mockRepo.create.mockResolvedValue(created);
 
-  it('debería lanzar error si la marca no existe', async () => {
-    const dto: CreateProductoDto = {
-      nombre: 'Ryzen 5',
-      precio: 200,
-      imagen: 'https://example.com/ryzen.jpg',
-      marcaId: 999,
-      categoriaIds: [1],
-    };
+    const result = await service.create(createDto as any);
+    expect(mockRepo.create).toHaveBeenCalledWith(createDto);
+    expect(result).toEqual(created);
 
-    await expect(service.create(dto)).rejects.toThrow(/marca/i);
-  });
+    // Update path
+    mockValidator.validarExistencia.mockResolvedValue(undefined);
+    const updated = { id: 1, name: 'Prod v2', price: 120 };
+    mockRepo.update.mockResolvedValue(updated);
 
-  it('debería actualizar el producto y cambiar categorías', async () => {
-    const creado = await service.create({
-      nombre: 'Ryzen 5',
-      precio: 200,
-      imagen: 'https://example.com/ryzen.jpg',
-      marcaId: 1,
-      categoriaIds: [1],
-    });
-
-    const dto: UpdateProductoDto = {
-      categoriaIds: [2, 3],
-    };
-
-    const actualizado = await service.update(creado.id, dto);
-    expect(actualizado.categorias.map(c => c.id)).toEqual([2, 3]);
-  });
-
-  it('debería eliminar un producto', async () => {
-    const creado = await service.create({
-      nombre: 'Ryzen 5',
-      precio: 200,
-      imagen: 'https://example.com/ryzen.jpg',
-      marcaId: 1,
-      categoriaIds: [1],
-    });
-
-    await service.remove(creado.id);
-    const todos = await service.findAll();
-    expect(todos).toHaveLength(0);
+    const res2 = await service.update(1, { name: 'Prod v2', price: 120 } as any);
+    expect(mockRepo.update).toHaveBeenCalledWith(1, expect.objectContaining({ name: 'Prod v2' }));
+    expect(res2).toEqual(updated);
   });
 });

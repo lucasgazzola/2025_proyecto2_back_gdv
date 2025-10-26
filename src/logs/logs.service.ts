@@ -2,15 +2,14 @@ import { Injectable, Inject } from '@nestjs/common';
 import { CreateLogDto } from './dto/create-log.dto';
 import type { ILogRepository } from './repositories/log.repository.interface';
 import { ILogRepositoryToken } from './repositories/log.repository.interface';
-import { LogStatus } from 'src/common/enums/log-status.enums';
+import { LogStatus } from '../common/enums/log-status.enums';
 import { Log } from './entities/log.entity';
 
 @Injectable()
 export class LogsService {
-
   constructor(
     @Inject(ILogRepositoryToken)
-    private readonly logRepository: ILogRepository
+    private readonly logRepository: ILogRepository,
   ) {}
 
   create(createLogDto: CreateLogDto) {
@@ -47,5 +46,4 @@ export class LogsService {
       details,
     });
   }
-
 }

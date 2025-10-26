@@ -1,7 +1,8 @@
-import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsNotEmpty } from 'class-validator';
 
 export class CreateMarcaDto {
   @IsString()
+  @IsNotEmpty({ message: 'El nombre es obligatorio' })
   name: string;
 
   // El campo `logo` se establece en el servidor cuando el frontend sube

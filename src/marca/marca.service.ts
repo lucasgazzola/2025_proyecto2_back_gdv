@@ -14,7 +14,7 @@ export class MarcaService {
 
   async create(dto: CreateMarcaDto) {
     const existente = await this.repo.findByName(dto.name.trim());
-    if (existente) throw new ConflictException('Marca ya existente');
+    if (existente) throw new ConflictException('La marca ya existe');
 
     return this.repo.create(dto);
   }

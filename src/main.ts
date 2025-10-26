@@ -20,6 +20,9 @@ async function bootstrap() {
       forbidNonWhitelisted: false,
       // transform: convierte tipos (útil para params/queries)
       transform: true,
+      // enableImplicitConversion permite que class-transformer convierta
+      // strings a numbers/booleans si la propiedad del DTO está tipada.
+      transformOptions: { enableImplicitConversion: true },
     }),
   );
 

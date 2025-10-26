@@ -1,88 +1,69 @@
 import { MarcaService } from './marca.service';
-import { CreateMarcaDto } from './dto/create-marca.dto';
-import { UpdateMarcaDto } from './dto/update-marca.dto';
-import { ProductoRepository } from '../producto/producto.repository';
-import { CategoriaRepository } from '../categoria/categoria.repository';
+import { ConflictException, BadRequestException } from '@nestjs/common';
+import { validate } from 'class-validator';
 
-describe('MarcaService', () => {
+describe('MarcaService - gestión de marcas', () => {
   let service: MarcaService;
-  let repo: MarcaRepository;
-  let productoRepo: ProductoRepository;
-  let categoriaRepo: CategoriaRepository;
+  const mockRepo: any = {
+    findByName: jest.fn(),
+    create: jest.fn(),
+    findById: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    findAll: jest.fn(),
+  };
 
   beforeEach(() => {
-    repo = new MarcaRepository();
-    productoRepo = new ProductoRepository();
-    categoriaRepo = new CategoriaRepository();
-    service = new MarcaService(repo, productoRepo);
+    jest.clearAllMocks();
+    service = new MarcaService(mockRepo);
   });
 
-  it('debería crear una marca', async () => {
-    const dto: CreateMarcaDto = { nombre: 'Nike', descripcion: 'Marca deportiva' };
-    const marca = await service.create(dto);
+  it('When (1) name empty -> DTO validation message "El nombre es obligatorio"', async () => {
+    const CreateDto = require('./dto/create-marca.dto').CreateMarcaDto;
+    const dto = new CreateDto();
+    dto.name = '';
 
-    expect(marca).toMatchObject({
-      id: expect.any(Number),
-      nombre: 'Nike',
-      descripcion: 'Marca deportiva',
-    });
+    const errors = await validate(dto);
+    const messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+    expect(messages).toContain('El nombre es obligatorio');
   });
 
-  it('debería listar todas las marcas', async () => {
-    await service.create({ nombre: 'Adidas' });
-    await service.create({ nombre: 'Puma' });
+  it('When (2) name already exists -> service throws "La marca ya existe"', async () => {
+    const CreateDto = require('./dto/create-marca.dto').CreateMarcaDto;
+    const dto = new CreateDto();
+    dto.name = 'Existing';
 
-    const marcas = await service.findAll();
-    expect(marcas).toHaveLength(2);
-    expect(marcas.map(m => m.nombre)).toEqual(expect.arrayContaining(['Adidas', 'Puma']));
+    mockRepo.findByName.mockResolvedValue({ id: 1, name: 'Existing' });
+
+    await expect(service.create(dto as any)).rejects.toThrow(ConflictException);
+    await expect(service.create(dto as any)).rejects.toThrow('La marca ya existe');
   });
 
-  it('debería encontrar una marca por ID', async () => {
-    const creada = await service.create({ nombre: 'Reebok' });
-    const encontrada = await service.findOne(creada.id);
+  it('When (3) attempt to delete brand with active products -> service prevents deletion and throws error', async () => {
+    // Simulate repo.delete throwing a BadRequestException when brand has active products
+    mockRepo.delete.mockRejectedValue(new BadRequestException('No se puede eliminar marca con productos activos'));
 
-    expect(encontrada).toEqual(creada);
+    await expect(service.remove(10)).rejects.toThrow(BadRequestException);
+    await expect(service.remove(10)).rejects.toThrow('No se puede eliminar marca con productos activos');
   });
 
-  it('debería actualizar una marca', async () => {
-    const creada = await service.create({ nombre: 'Fila' });
-    const dto: UpdateMarcaDto = { descripcion: 'Actualizada' };
+  it('When (4) valid data -> create or update works correctly', async () => {
+    const dto = { name: 'New Brand' };
+    const created = { id: 11, name: 'New Brand', isActive: true };
+    mockRepo.findByName.mockResolvedValue(null);
+    mockRepo.create.mockResolvedValue(created);
 
-    const actualizada = await service.update(creada.id, dto);
-    expect(actualizada.descripcion).toBe('Actualizada');
+    const result = await service.create(dto as any);
+    expect(mockRepo.create).toHaveBeenCalledWith(dto);
+    expect(result).toEqual(created);
+
+    // Update path
+    const updated = { id: 11, name: 'Updated Brand', isActive: true };
+    mockRepo.update.mockResolvedValue(updated);
+    mockRepo.findById.mockResolvedValue({ id: 11, name: 'New Brand' });
+
+    const res2 = await service.update(11, { name: 'Updated Brand' } as any);
+    expect(mockRepo.update).toHaveBeenCalledWith(11, expect.objectContaining({ name: 'Updated Brand' }));
+    expect(res2).toEqual(updated);
   });
-
-  it('debería eliminar una marca', async () => {
-    const creada = await service.create({ nombre: 'Umbro' });
-    await service.remove(creada.id);
-
-    const todas = await service.findAll();
-    expect(todas).toHaveLength(0);
-  });
-
-  it('debería lanzar error si la marca no existe', async () => {
-    await expect(service.findOne(999)).resolves.toBeNull();
-    await expect(service.update(999, { nombre: 'X' })).rejects.toThrow('Marca no encontrada');
-    await expect(service.remove(999)).rejects.toThrow('Marca no encontrada');
-  });
-
-  it('no debería permitir crear marcas con el mismo nombre', async () => {
-  await service.create({ nombre: 'Nike' });
-
-  await expect(service.create({ nombre: 'nike' })).rejects.toThrow("Marca ya existente");
-});
-
-  it('debería bloquear la eliminación si hay productos asociados', async () => {
-    const marca = await repo.create({ nombre: 'Intel' });
-    await productoRepo.create({
-      nombre: 'Core i9',
-      precio: 600,
-      imagen: 'https://...',
-      marca,
-      categorias: [],
-    });
-
-  await expect(service.remove(marca.id)).rejects.toThrow("No se puede eliminar la marca, ya tiene productos asoaciados");
-});
-
 });
