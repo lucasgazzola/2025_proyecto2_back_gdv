@@ -24,7 +24,9 @@ describe('MarcaService - gestión de marcas', () => {
     dto.name = '';
 
     const errors = await validate(dto);
-    const messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+    const messages = errors.flatMap((e: any) =>
+      e.constraints ? Object.values(e.constraints) : [],
+    );
     expect(messages).toContain('El nombre es obligatorio');
   });
 
@@ -36,15 +38,23 @@ describe('MarcaService - gestión de marcas', () => {
     mockRepo.findByName.mockResolvedValue({ id: 1, name: 'Existing' });
 
     await expect(service.create(dto as any)).rejects.toThrow(ConflictException);
-    await expect(service.create(dto as any)).rejects.toThrow('La marca ya existe');
+    await expect(service.create(dto as any)).rejects.toThrow(
+      'La marca ya existe',
+    );
   });
 
   it('When (3) attempt to delete brand with active products -> service prevents deletion and throws error', async () => {
     // Simulate repo.delete throwing a BadRequestException when brand has active products
-    mockRepo.delete.mockRejectedValue(new BadRequestException('No se puede eliminar marca con productos activos'));
+    mockRepo.delete.mockRejectedValue(
+      new BadRequestException(
+        'No se puede eliminar marca con productos activos',
+      ),
+    );
 
     await expect(service.remove(10)).rejects.toThrow(BadRequestException);
-    await expect(service.remove(10)).rejects.toThrow('No se puede eliminar marca con productos activos');
+    await expect(service.remove(10)).rejects.toThrow(
+      'No se puede eliminar marca con productos activos',
+    );
   });
 
   it('When (4) valid data -> create or update works correctly', async () => {
@@ -63,7 +73,10 @@ describe('MarcaService - gestión de marcas', () => {
     mockRepo.findById.mockResolvedValue({ id: 11, name: 'New Brand' });
 
     const res2 = await service.update(11, { name: 'Updated Brand' } as any);
-    expect(mockRepo.update).toHaveBeenCalledWith(11, expect.objectContaining({ name: 'Updated Brand' }));
+    expect(mockRepo.update).toHaveBeenCalledWith(
+      11,
+      expect.objectContaining({ name: 'Updated Brand' }),
+    );
     expect(res2).toEqual(updated);
   });
 });

@@ -1,4 +1,10 @@
-import { Inject, Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import * as bcrypt from 'bcrypt';
@@ -7,12 +13,12 @@ import { IUsuarioRepositoryToken } from './repositories/usuario.repository.inter
 import type { IUsuarioRepository } from './repositories/usuario.repository.interface';
 import { Role } from '../common/enums/roles.enums';
 
-
 @Injectable()
 export class UsuarioService {
   constructor(
     @Inject(IUsuarioRepositoryToken)
-    private readonly repo: IUsuarioRepository) {}
+    private readonly repo: IUsuarioRepository,
+  ) {}
 
   async create(dto: CreateUsuarioDto): Promise<User> {
     return this.repo.create(dto);
@@ -58,14 +64,22 @@ export class UsuarioService {
     return this.repo.update(id, data);
   }
 
-  async changePassword(email: string, oldPassword: string, newPassword: string) {
+  async changePassword(
+    email: string,
+    oldPassword: string,
+    newPassword: string,
+  ) {
     // Necesitamos el password hasheado para comparar, por eso usamos findByEmailWithPassword
-    const userWithPassword: any = await this.repo.findByEmailWithPassword(email);
+    const userWithPassword: any =
+      await this.repo.findByEmailWithPassword(email);
     if (!userWithPassword) {
       throw new BadRequestException('Usuario no encontrado');
     }
 
-    const passwordMatch = await bcrypt.compare(oldPassword, userWithPassword.password);
+    const passwordMatch = await bcrypt.compare(
+      oldPassword,
+      userWithPassword.password,
+    );
     if (!passwordMatch) {
       throw new BadRequestException('Contraseña actual incorrecta');
     }

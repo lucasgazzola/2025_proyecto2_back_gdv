@@ -25,7 +25,9 @@ describe('CategoriaService - gestión de categorías', () => {
     dto.description = '';
 
     const errors = await validate(dto);
-    const messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+    const messages = errors.flatMap((e: any) =>
+      e.constraints ? Object.values(e.constraints) : [],
+    );
     expect(messages).toContain('El nombre es obligatorio');
   });
 
@@ -36,8 +38,12 @@ describe('CategoriaService - gestión de categorías', () => {
 
     mockRepo.findByName.mockResolvedValue({ id: 1, name: 'Existing' });
 
-    await expect(service.create(dto as any)).rejects.toThrow(BadRequestException);
-    await expect(service.create(dto as any)).rejects.toThrow('El nombre de categoría ya existe');
+    await expect(service.create(dto as any)).rejects.toThrow(
+      BadRequestException,
+    );
+    await expect(service.create(dto as any)).rejects.toThrow(
+      'El nombre de categoría ya existe',
+    );
   });
 
   it('When (3) edit category with valid data -> updates correctly', async () => {
@@ -48,7 +54,10 @@ describe('CategoriaService - gestión de categorías', () => {
     mockRepo.update.mockResolvedValue(updated);
 
     const result = await service.update(5, { name: 'New' } as any);
-    expect(mockRepo.update).toHaveBeenCalledWith(5, expect.objectContaining({ name: 'New' }));
+    expect(mockRepo.update).toHaveBeenCalledWith(
+      5,
+      expect.objectContaining({ name: 'New' }),
+    );
     expect(result).toEqual(updated);
   });
 

@@ -29,7 +29,9 @@ describe('ProductoService - gestión de productos', () => {
     dto.categoryIds = [1];
 
     const errors = await validate(dto as any);
-    const messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+    const messages = errors.flatMap((e: any) =>
+      e.constraints ? Object.values(e.constraints) : [],
+    );
 
     expect(messages).toContain('El nombre es obligatorio');
     expect(messages).toContain('La imagen es obligatoria');
@@ -44,13 +46,17 @@ describe('ProductoService - gestión de productos', () => {
     dto.categoryIds = [1];
 
     const errors = await validate(dto as any);
-    const messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+    const messages = errors.flatMap((e: any) =>
+      e.constraints ? Object.values(e.constraints) : [],
+    );
     expect(messages).toContain('El precio debe ser un número válido');
   });
 
   it('When (3) search by name or brand not found -> service throws "No se encontraron resultados"', async () => {
     mockRepo.findAll.mockResolvedValue([]);
-    await expect(service.findAll()).rejects.toThrow('No se encontraron resultados');
+    await expect(service.findAll()).rejects.toThrow(
+      'No se encontraron resultados',
+    );
   });
 
   it('When (4) valid data -> create or update works and reflects changes', async () => {
@@ -72,8 +78,14 @@ describe('ProductoService - gestión de productos', () => {
     const updated = { id: 1, name: 'Prod v2', price: 120 };
     mockRepo.update.mockResolvedValue(updated);
 
-    const res2 = await service.update(1, { name: 'Prod v2', price: 120 } as any);
-    expect(mockRepo.update).toHaveBeenCalledWith(1, expect.objectContaining({ name: 'Prod v2' }));
+    const res2 = await service.update(1, {
+      name: 'Prod v2',
+      price: 120,
+    } as any);
+    expect(mockRepo.update).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ name: 'Prod v2' }),
+    );
     expect(res2).toEqual(updated);
   });
 });

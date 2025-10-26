@@ -28,7 +28,9 @@ describe('ClienteService - gestión de clientes', () => {
     dto.dni = '';
 
     const errors = await validate(dto as any);
-    const messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+    const messages = errors.flatMap((e: any) =>
+      e.constraints ? Object.values(e.constraints) : [],
+    );
     expect(messages).toContain('El nombre es obligatorio');
     expect(messages).toContain('El apellido es obligatorio');
     expect(messages).toContain('El DNI es obligatorio');
@@ -44,14 +46,18 @@ describe('ClienteService - gestión de clientes', () => {
 
     // invalid format
     let errors = await validate(dto as any);
-    let messages = errors.flatMap((e: any) => (e.constraints ? Object.values(e.constraints) : []));
+    let messages = errors.flatMap((e: any) =>
+      e.constraints ? Object.values(e.constraints) : [],
+    );
     expect(messages).toContain('Correo electrónico inválido');
 
     // duplicate
     dto.email = 'dup@example.com';
     mockRepo.findByEmail.mockResolvedValue({ id: 2, email: dto.email });
     await expect(service.create(dto as any)).rejects.toThrow(ConflictException);
-    await expect(service.create(dto as any)).rejects.toThrow('El email ya está en uso');
+    await expect(service.create(dto as any)).rejects.toThrow(
+      'El email ya está en uso',
+    );
   });
 
   it('When (3) valid data -> creates client successfully', async () => {

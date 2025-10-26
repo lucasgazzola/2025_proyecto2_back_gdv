@@ -18,9 +18,9 @@ import { join } from 'path';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'), // carpeta a exponer
       serveRoot: '/uploads', // URL base pública
-  // exclude can be a path pattern or RegExp. '/api*' or '/api(.*)' may cause path-to-regexp parse errors
-  // Use a safe RegExp that matches any route under /api
-  // cast a RegExp to any to satisfy the serve-static typing while keeping a safe runtime pattern
+      // exclude can be a path pattern or RegExp. '/api*' or '/api(.*)' may cause path-to-regexp parse errors
+      // Use a safe RegExp that matches any route under /api
+      // cast a RegExp to any to satisfy the serve-static typing while keeping a safe runtime pattern
       serveStaticOptions: {
         index: false, // no listar índices
         extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp'],

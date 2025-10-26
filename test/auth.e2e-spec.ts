@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, ValidationPipe, UnauthorizedException } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  UnauthorizedException,
+} from '@nestjs/common';
 import request from 'supertest';
 import { AuthController } from '../src/auth/auth.controller';
 import { AuthService } from '../src/auth/auth.service';

@@ -26,18 +26,24 @@ describe('LogsService (unit) - auditoría', () => {
     };
     mockRepo.create.mockResolvedValue(createdLog);
 
-    const result = await service.createSuccessLog('CREATE_ORDER', 42, 'Pedido creado');
+    const result = await service.createSuccessLog(
+      'CREATE_ORDER',
+      42,
+      'Pedido creado',
+    );
 
-    expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({
-      status: LogStatus.SUCCESS,
-      action: 'CREATE_ORDER',
-      userId: 42,
-      details: 'Pedido creado',
-    }));
+    expect(mockRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: LogStatus.SUCCESS,
+        action: 'CREATE_ORDER',
+        userId: 42,
+        details: 'Pedido creado',
+      }),
+    );
 
     expect(result).toHaveProperty('timestamp');
-  expect(result.user).toBeDefined();
-  expect((result.user as any).role).toBe('ADMIN');
+    expect(result.user).toBeDefined();
+    expect((result.user as any).role).toBe('ADMIN');
   });
 
   it('When (2) auditor attempts to modify a log -> system prevents modification (no update exposed)', async () => {
@@ -49,9 +55,24 @@ describe('LogsService (unit) - auditoría', () => {
 
   it('When (3) auditor filters by action or date -> system returns correctly filtered results', async () => {
     const logs = [
-      { id: 1, action: 'CREATE_ORDER', status: LogStatus.SUCCESS, timestamp: new Date('2025-10-01') },
-      { id: 2, action: 'DELETE_ORDER', status: LogStatus.FAILURE, timestamp: new Date('2025-10-02') },
-      { id: 3, action: 'CREATE_ORDER', status: LogStatus.INFO, timestamp: new Date('2025-10-03') },
+      {
+        id: 1,
+        action: 'CREATE_ORDER',
+        status: LogStatus.SUCCESS,
+        timestamp: new Date('2025-10-01'),
+      },
+      {
+        id: 2,
+        action: 'DELETE_ORDER',
+        status: LogStatus.FAILURE,
+        timestamp: new Date('2025-10-02'),
+      },
+      {
+        id: 3,
+        action: 'CREATE_ORDER',
+        status: LogStatus.INFO,
+        timestamp: new Date('2025-10-03'),
+      },
     ];
     mockRepo.findAll.mockResolvedValue(logs);
 
@@ -59,11 +80,15 @@ describe('LogsService (unit) - auditoría', () => {
     expect(all.length).toBe(3);
 
     // Filter by action
-    const filteredByAction = all.filter((l: any) => l.action === 'CREATE_ORDER');
+    const filteredByAction = all.filter(
+      (l: any) => l.action === 'CREATE_ORDER',
+    );
     expect(filteredByAction.length).toBe(2);
 
     // Filter by date range (>= 2025-10-02)
-    const filteredByDate = all.filter((l: any) => l.timestamp >= new Date('2025-10-02'));
+    const filteredByDate = all.filter(
+      (l: any) => l.timestamp >= new Date('2025-10-02'),
+    );
     expect(filteredByDate.length).toBe(2);
   });
 });
