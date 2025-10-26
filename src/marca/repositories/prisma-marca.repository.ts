@@ -35,7 +35,9 @@ export class PrismaMarcaRepository implements IMarcaRepository {
   }
 
   async findAll(): Promise<Marca[]> {
-    const marcas = await prisma.brand.findMany();
+    const marcas = await prisma.brand.findMany({
+      where: { isActive: true },
+    });
 
     return marcas.map(MarcaMapper.toDomain);
   }
