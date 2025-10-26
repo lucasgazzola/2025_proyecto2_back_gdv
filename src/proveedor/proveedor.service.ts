@@ -17,7 +17,7 @@ export class ProveedorService {
   }
 
   async findById(id: number): Promise<Proveedor | null> {
-    const provider = this.repo.findById(id);
+    const provider = await this.repo.findById(id);
     if (!provider) throw new NotFoundException('Proveedor no encontrado');
 
     return provider;

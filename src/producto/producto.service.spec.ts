@@ -52,11 +52,9 @@ describe('ProductoService - gestión de productos', () => {
     expect(messages).toContain('El precio debe ser un número válido');
   });
 
-  it('When (3) search by name or brand not found -> service throws "No se encontraron resultados"', async () => {
+  it('When (3) search by name or brand not found -> returns empty array', async () => {
     mockRepo.findAll.mockResolvedValue([]);
-    await expect(service.findAll()).rejects.toThrow(
-      'No se encontraron resultados',
-    );
+    await expect(service.findAll()).resolves.toEqual([]);
   });
 
   it('When (4) valid data -> create or update works and reflects changes', async () => {

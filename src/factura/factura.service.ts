@@ -106,7 +106,6 @@ export class FacturaService {
       const itemProductId = Number(itemProductIdRaw);
       const producto = productos.find((p) => p.id === itemProductId);
 
-      console.log({ producto });
       if (!producto) {
         throw new BadRequestException('Producto no encontrado');
       }

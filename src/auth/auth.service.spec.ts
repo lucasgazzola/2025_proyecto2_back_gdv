@@ -9,6 +9,8 @@ jest.mock('bcrypt', () => ({
 }));
 const bcrypt: any = require('bcrypt');
 import { Role } from '../common/enums/roles.enums';
+import * as jwt from 'jsonwebtoken';
+import { config } from '../common/config/jwtConfig';
 
 describe('AuthService (unit)', () => {
   let authService: AuthService;
@@ -78,6 +80,23 @@ describe('AuthService (unit)', () => {
       mockUsersService.findByEmailWithPassword.mockResolvedValue(null);
     });
 
+    it('When (3a) user not found -> logs failure and throws', async () => {
+      const dto = new LoginAuthDto();
+      dto.email = 'nouser@example.com';
+      dto.password = 'any';
+
+      mockUsersService.findByEmailWithPassword.mockResolvedValue(null);
+
+      await expect(authService.login(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockLogsService.createFailureLog).toHaveBeenCalledWith(
+        'LOGIN',
+        undefined,
+        expect.stringContaining(dto.email),
+      );
+    });
+
     it('When (4) valid format but incorrect credentials -> throws UnauthorizedException with "Credenciales inválidas"', async () => {
       const dto = new LoginAuthDto();
       dto.email = 'valid@example.com';
@@ -126,6 +145,11 @@ describe('AuthService (unit)', () => {
       const result = await authService.login(dto);
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
+      expect(mockLogsService.createSuccessLog).toHaveBeenCalledWith(
+        'LOGIN',
+        user.id,
+        expect.stringContaining(user.email),
+      );
     });
   });
 
@@ -169,6 +193,7 @@ describe('AuthService (unit)', () => {
       await expect(authService.register(dto)).rejects.toThrow(
         'El correo ya está registrado',
       );
+      expect(mockLogsService.createFailureLog).toHaveBeenCalled();
     });
 
     it('When (3) invalid email format -> returns "Correo electrónico inválido"', async () => {
@@ -257,6 +282,131 @@ describe('AuthService (unit)', () => {
 
       const result = await authService.register(dto as any);
       expect(result).toHaveProperty('email', dto.email);
+      // password was hashed (bcrypt mocked to return 'hashed')
+      expect(mockUsersService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ password: 'hashed' }),
+      );
+      expect(mockLogsService.createSuccessLog).toHaveBeenCalledWith(
+        'REGISTER_USER',
+        10,
+        expect.stringContaining(dto.email),
+      );
+    });
+  });
+
+  describe('Tokens, refresh and password-reset behavior', () => {
+    it('logout returns a success message', () => {
+      expect(authService.logout()).toEqual({
+        message: 'Sesión cerrada correctamente',
+      });
+    });
+
+    it('generateToken + getPayload produce/consume a token correctly', () => {
+      const payload = { id: 1, role: Role.USER, email: 'a@b.com' };
+      const token = authService.generateToken(payload, 'auth');
+
+      const verified = authService.getPayload(token, 'auth');
+      expect(verified).toMatchObject({
+        id: 1,
+        role: Role.USER,
+        email: 'a@b.com',
+      });
+    });
+
+    it('refreshToken throws on invalid token', async () => {
+      await expect(authService.refreshToken('bad.token')).rejects.toThrow(
+        'Token inválido o expirado',
+      );
+    });
+
+    it('refreshToken throws when user from token does not exist', async () => {
+      // do not include exp in payload when also using expiresIn option
+      const token = jwt.sign(
+        { email: 'missing@example.com' },
+        config.refresh.secret,
+        {
+          expiresIn: '1h',
+        },
+      );
+      mockUsersService.findByEmail.mockResolvedValue(null);
+
+      await expect(authService.refreshToken(token)).rejects.toThrow(
+        'Token inválido o expirado',
+      );
+    });
+
+    it('refreshToken returns both tokens when refresh is near expiry (<20 minutes)', async () => {
+      const user = { id: 5, email: 'near@expiry.com', role: Role.USER };
+      mockUsersService.findByEmail.mockResolvedValue(user);
+
+      // create a refresh token that expires very soon (30 seconds)
+      const shortToken = jwt.sign(
+        { email: user.email },
+        config.refresh.secret,
+        {
+          expiresIn: '30s',
+        },
+      );
+
+      const res = await authService.refreshToken(shortToken);
+      expect(res).toHaveProperty('accessToken');
+      expect(res).toHaveProperty('refreshToken');
+    });
+
+    it('refreshToken returns only accessToken when refresh has enough life', async () => {
+      const user = { id: 6, email: 'long@expiry.com', role: Role.USER };
+      mockUsersService.findByEmail.mockResolvedValue(user);
+
+      // use the real generator for a normal refresh token (config.refresh.expiresIn = 1d)
+      const longToken = authService.generateToken(
+        { email: user.email },
+        'refresh',
+      );
+
+      const res = await authService.refreshToken(longToken);
+      expect(res).toHaveProperty('accessToken');
+      expect(res).not.toHaveProperty('refreshToken');
+    });
+
+    it('sendPasswordResetEmail does nothing when user not found', async () => {
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      await expect(
+        authService.sendPasswordResetEmail('noone@example.com'),
+      ).resolves.toBeUndefined();
+      expect(mockMailService.send).not.toHaveBeenCalled();
+    });
+
+    it('sendPasswordResetEmail sends mail when user exists', async () => {
+      const user = { id: 9, email: 'send@me.com' };
+      mockUsersService.findByEmail.mockResolvedValue(user);
+
+      const sendSpy = mockMailService.send;
+      sendSpy.mockResolvedValue(undefined);
+
+      await authService.sendPasswordResetEmail(user.email);
+
+      expect(sendSpy).toHaveBeenCalled();
+      const callArg = sendSpy.mock.calls[0][0];
+      expect(callArg).toHaveProperty('to', user.email);
+      expect(callArg).toHaveProperty('subject', 'Recuperación de contraseña');
+      expect(callArg.html).toContain('restablecer tu contraseña');
+      expect(callArg.html).toContain('?token=');
+    });
+
+    it('validateToken returns valid true for a valid reset token and false for invalid', async () => {
+      const token = jwt.sign({ email: 'x@y.com' }, config.reset.secret, {
+        expiresIn: '1m',
+      });
+
+      const ok = await authService.validateToken(token);
+      expect(ok).toEqual({ valid: true, email: 'x@y.com' });
+
+      const bad = await authService.validateToken('invalid');
+      expect(bad).toEqual({ valid: false });
+    });
+
+    it('getPayload throws when token invalid', () => {
+      expect(() => authService.getPayload('invalid.token', 'auth')).toThrow();
     });
   });
 });
