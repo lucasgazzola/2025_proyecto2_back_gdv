@@ -69,7 +69,7 @@ model Product {
   name          String
   price         Float
   stock         Int             @default(0)
-  imagesURL     String[]
+  imageURL      String
   brand         Brand?          @relation(fields: [brandId], references: [id], onDelete: Restrict)
   brandId       Int?
   categories    Category[]
