@@ -27,6 +27,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as fs from 'fs';
+import { flattenValidationErrors, saveBase64Image } from 'src/common/helpers';
 
 @Controller('productos')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -45,9 +46,7 @@ export class ProductoController {
           const uploadPath = './uploads/products';
           try {
             fs.mkdirSync(uploadPath, { recursive: true });
-          } catch (e) {
-            // ignore
-          }
+          } catch (e) {}
           cb(null, uploadPath);
         },
         filename: (req, file, cb) => {
@@ -143,6 +142,13 @@ export class ProductoController {
     });
     if (errors && errors.length > 0) {
       const messages = flattenValidationErrors(errors);
+      try {
+        await this.logsService.createFailureLog(
+          'CREATE_PRODUCT_FAILED',
+          req.user?.id,
+          `Errores de validación: ${JSON.stringify(messages)}`,
+        );
+      } catch (e) {}
       throw new BadRequestException({
         message: messages,
         error: 'Bad Request',
@@ -272,6 +278,13 @@ export class ProductoController {
     });
     if (errors && errors.length > 0) {
       const messages = flattenValidationErrors(errors);
+      try {
+        await this.logsService.createFailureLog(
+          'UPDATE_PRODUCT_FAILED',
+          req.user?.id,
+          `Errores de validación: ${JSON.stringify(messages)}`,
+        );
+      } catch (e) {}
       throw new BadRequestException({
         message: messages,
         error: 'Bad Request',
@@ -301,47 +314,4 @@ export class ProductoController {
     );
     return result;
   }
-}
-
-// Helper to save a base64 data URL to uploads/products and return the saved relative path
-function saveBase64Image(dataUrl: string): string {
-  try {
-    const matches = dataUrl.match(
-      /^data:(image\/(png|jpeg|jpg|gif));base64,(.+)$/,
-    );
-    if (!matches) throw new Error('Formato de imagen no válido');
-    const mime = matches[1];
-    const ext =
-      mime.split('/')[1] === 'jpeg' ? '.jpg' : `.${mime.split('/')[1]}`;
-    const base64Data = matches[3];
-    const buffer = Buffer.from(base64Data, 'base64');
-    const filename = Date.now() + '-' + Math.round(Math.random() * 1e9) + ext;
-    const uploadPath = './uploads/products';
-    try {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    } catch (e) {}
-    const fullPath = `${uploadPath}/${filename}`;
-    fs.writeFileSync(fullPath, buffer);
-    return `uploads/products/${filename}`;
-  } catch (e) {
-    throw new BadRequestException('No se pudo procesar la imagen base64');
-  }
-}
-
-function flattenValidationErrors(errors: any[]): string[] {
-  const messages: string[] = [];
-  const collect = (errs: any[]) => {
-    for (const e of errs) {
-      if (e.constraints) {
-        for (const key of Object.keys(e.constraints)) {
-          messages.push(e.constraints[key]);
-        }
-      }
-      if (e.children && e.children.length) {
-        collect(e.children);
-      }
-    }
-  };
-  collect(errors);
-  return messages;
 }

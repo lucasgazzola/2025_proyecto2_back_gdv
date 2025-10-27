@@ -50,19 +50,40 @@ export class UsuarioController {
 
   @Get()
   @Roles(Role.ADMIN)
-  findAll() {
+  async findAll(@Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_USERS',
+        req.user?.id,
+        `Usuario ${req.user?.email} listó usuarios`,
+      );
+    } catch (e) {}
     return this.usuarioService.findAll();
   }
 
   @Get('email/:email')
   @Roles(Role.ADMIN)
-  findByEmail(@Param('email') email: string) {
+  async findByEmail(@Param('email') email: string, @Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_USER_BY_EMAIL',
+        req.user?.id,
+        `Usuario ${req.user?.email} buscó usuario por email: ${email}`,
+      );
+    } catch (e) {}
     return this.usuarioService.findByEmail(email);
   }
 
   @Get(':id')
   @Roles(Role.ADMIN)
-  findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_USER',
+        req.user?.id,
+        `Usuario ${req.user?.email} solicitó usuario ID: ${id}`,
+      );
+    } catch (e) {}
     return this.usuarioService.findById(id);
   }
 
@@ -121,6 +142,13 @@ export class UsuarioController {
   ) {
     // req.user.email debe ser string
     if (String(req.user.email) !== email) {
+      try {
+        await this.logsService.createFailureLog(
+          'CHANGE_PASSWORD_FAILED',
+          req.user?.id,
+          `Intento no autorizado de cambio de contraseña para: ${email}`,
+        );
+      } catch (e) {}
       throw new BadRequestException(
         'No autorizado para cambiar esta contraseña',
       );
@@ -128,6 +156,13 @@ export class UsuarioController {
 
     // dto ya validado: dto.old_password, dto.new_password, dto.password_confirm
     if (dto.new_password !== dto.password_confirm) {
+      try {
+        await this.logsService.createFailureLog(
+          'CHANGE_PASSWORD_FAILED',
+          req.user?.id,
+          `Contraseñas nuevas no coinciden para: ${email}`,
+        );
+      } catch (e) {}
       throw new BadRequestException('Las contraseñas nuevas no coinciden');
     }
 

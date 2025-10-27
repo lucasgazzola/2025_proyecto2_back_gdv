@@ -83,19 +83,40 @@ export class MarcaController {
 
   @Get()
   @Roles(Role.ADMIN, Role.USER)
-  findAll() {
+  async findAll(@Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_BRANDS',
+        req.user?.id,
+        `Usuario ${req.user?.email} listó marcas`,
+      );
+    } catch (e) {}
     return this.service.findAll();
   }
 
   @Get(':id')
   @Roles(Role.ADMIN, Role.USER)
-  findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_BRAND',
+        req.user?.id,
+        `Usuario ${req.user?.email} solicitó marca ID: ${id}`,
+      );
+    } catch (e) {}
     return this.service.findById(id);
   }
 
   @Get(':name')
   @Roles(Role.ADMIN, Role.USER)
-  findByName(@Param('name') name: string) {
+  async findByName(@Param('name') name: string, @Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_BRAND_BY_NAME',
+        req.user?.id,
+        `Usuario ${req.user?.email} solicitó marca por nombre: ${name}`,
+      );
+    } catch (e) {}
     return this.service.findByName(name);
   }
 

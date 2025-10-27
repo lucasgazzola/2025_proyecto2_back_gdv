@@ -4,9 +4,10 @@ import { ProveedorController } from './proveedor.controller';
 import { PrismaProveedorRepository } from './repositories/prisma-proveedor.repository';
 import { IProveedorRepositoryToken } from './repositories/proveedor.repository.interface';
 import { AuthModule } from '../auth/auth.module';
+import { LogsModule } from 'src/logs/logs.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, LogsModule],
   controllers: [ProveedorController],
   providers: [
     ProveedorService,

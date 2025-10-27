@@ -32,6 +32,13 @@ export class FacturaController {
   async create(@Body() data: any, @Request() req) {
     const userEmail = req.user.email;
     if (!userEmail) {
+      try {
+        await this.logsService.createFailureLog(
+          'CREATE_INVOICE_FAILED',
+          undefined,
+          'User email not found in request',
+        );
+      } catch (e) {}
       throw new ForbiddenException('User email not found in request');
     }
     const result = await this.service.create(data, userEmail);
@@ -45,13 +52,27 @@ export class FacturaController {
 
   @Get()
   @Roles(Role.ADMIN, Role.USER)
-  findAll() {
+  async findAll(@Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_INVOICES',
+        req.user?.id,
+        `Usuario ${req.user?.email} listó facturas`,
+      );
+    } catch (e) {}
     return this.service.findAll();
   }
 
   @Get(':id')
   @Roles(Role.ADMIN, Role.USER)
-  findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_INVOICE',
+        req.user?.id,
+        `Usuario ${req.user?.email} solicitó factura ID: ${id}`,
+      );
+    } catch (e) {}
     return this.service.findById(id);
   }
 
@@ -60,10 +81,26 @@ export class FacturaController {
   async changeState(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { state: 'PAID' | 'CANCELLED' },
+    @Request() req,
   ) {
     if (!body || !body.state) {
+      try {
+        await this.logsService.createFailureLog(
+          'CHANGE_INVOICE_STATE_FAILED',
+          undefined,
+          `state es requerido para factura ID: ${id}`,
+        );
+      } catch (e) {}
       throw new BadRequestException('state es requerido');
     }
-    return this.service.changeState(id, body.state);
+    const result = await this.service.changeState(id, body.state);
+    try {
+      await this.logsService.createSuccessLog(
+        'VALIDATE_TOKEN',
+        req.user.id,
+        `Factura ID: ${id} cambió a estado ${body.state}`,
+      );
+    } catch (e) {}
+    return result;
   }
 }

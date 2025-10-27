@@ -4,9 +4,10 @@ import { CategoriaController } from './categoria.controller';
 import { PrismaCategoriaRepository } from './repositories/prisma-categoria.repository';
 import { ICategoriaRepositoryToken } from './repositories/categoria.repository.interface';
 import { AuthModule } from '../auth/auth.module';
+import { LogsModule } from 'src/logs/logs.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, LogsModule],
   controllers: [CategoriaController],
   providers: [
     CategoriaService,

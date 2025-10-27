@@ -1,4 +1,11 @@
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { LogsService } from './logs.service';
 import { CreateLogDto } from './dto/create-log.dto';
 import { JwtAuthGuard } from '../auth/auth-roles.guard';
@@ -19,7 +26,14 @@ export class LogsController {
 
   @Get()
   @Roles(Role.AUDITOR)
-  findAll() {
+  async findAll(@Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_LOGS',
+        req.user?.id,
+        `Usuario ${req.user?.email} solicitó listado de logs`,
+      );
+    } catch (e) {}
     return this.logsService.findAll();
   }
 }

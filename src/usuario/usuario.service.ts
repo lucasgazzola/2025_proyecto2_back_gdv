@@ -5,6 +5,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { LogsService } from '../logs/logs.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 import * as bcrypt from 'bcrypt';
@@ -18,6 +19,7 @@ export class UsuarioService {
   constructor(
     @Inject(IUsuarioRepositoryToken)
     private readonly repo: IUsuarioRepository,
+    private readonly logsService: LogsService,
   ) {}
 
   async create(dto: CreateUsuarioDto): Promise<User> {
@@ -44,6 +46,11 @@ export class UsuarioService {
     // Ensure user exists
     const existing = await this.repo.findById(id);
     if (!existing) {
+      await this.logsService.createFailureLog(
+        'UPDATE_USER_FAILED',
+        undefined,
+        `Usuario no encontrado ID: ${id}`,
+      );
       throw new NotFoundException('Usuario no encontrado');
     }
 
@@ -51,6 +58,11 @@ export class UsuarioService {
     if ((dto as any).role !== undefined) {
       const roleValue = (dto as any).role;
       if (!Object.values(Role).includes(roleValue)) {
+        await this.logsService.createFailureLog(
+          'UPDATE_USER_FAILED',
+          undefined,
+          `Rol no válido: ${roleValue}`,
+        );
         throw new BadRequestException('Rol no válido');
       }
     }
@@ -73,6 +85,11 @@ export class UsuarioService {
     const userWithPassword: any =
       await this.repo.findByEmailWithPassword(email);
     if (!userWithPassword) {
+      await this.logsService.createFailureLog(
+        'CHANGE_PASSWORD_FAILED',
+        undefined,
+        `Usuario no encontrado: ${email}`,
+      );
       throw new BadRequestException('Usuario no encontrado');
     }
 
@@ -81,6 +98,11 @@ export class UsuarioService {
       userWithPassword.password,
     );
     if (!passwordMatch) {
+      await this.logsService.createFailureLog(
+        'CHANGE_PASSWORD_FAILED',
+        userWithPassword?.id,
+        `Contraseña actual incorrecta para usuario: ${email}`,
+      );
       throw new BadRequestException('Contraseña actual incorrecta');
     }
 

@@ -1,4 +1,5 @@
 import { Injectable, Inject, BadRequestException } from '@nestjs/common';
+import { LogsService } from '../logs/logs.service';
 import { IFacturaRepositoryToken } from './repositories/factura.repository.interface';
 import type { IFacturaRepository } from './repositories/factura.repository.interface';
 import { CreateFacturaDto } from './dto/create-factura.dto';
@@ -26,6 +27,7 @@ export class FacturaService {
     private readonly userRepo: IUsuarioRepository,
     @Inject(IClienteRepositoryToken)
     private readonly customerRepo: IClienteRepository,
+    private readonly logsService: LogsService,
   ) {}
 
   findAll() {
@@ -40,17 +42,32 @@ export class FacturaService {
     const user = await this.userRepo.findByEmail(userEmail);
 
     if (!user) {
+      await this.logsService.createFailureLog(
+        'CREATE_INVOICE_FAILED',
+        undefined,
+        `Usuario no encontrado: ${userEmail}`,
+      );
       throw new BadRequestException('Usuario no encontrado');
     }
 
     // el cliente puede venir como `customerId` o como `customer: { id }`
     const customerId = dto.customerId ?? dto.customer?.id;
     if (!customerId) {
+      await this.logsService.createFailureLog(
+        'CREATE_INVOICE_FAILED',
+        user.id,
+        'Cliente no especificado',
+      );
       throw new BadRequestException('Cliente no especificado');
     }
 
     const customer = await this.customerRepo.findById(Number(customerId));
     if (!customer) {
+      await this.logsService.createFailureLog(
+        'CREATE_INVOICE_FAILED',
+        user.id,
+        `Cliente no encontrado ID: ${customerId}`,
+      );
       throw new BadRequestException('Cliente no encontrado');
     }
 
@@ -62,13 +79,19 @@ export class FacturaService {
 
     // Normalizar y validar product ids desde invoiceDetails
     const productIds: number[] = [];
-    dto.invoiceDetails.forEach((i, idx) => {
+    for (let idx = 0; idx < dto.invoiceDetails.length; idx++) {
+      const i = dto.invoiceDetails[idx];
       // varios formatos posibles: i.product.id, i.productId, i.id (p.e. "14-1761443148092")
       let pidRaw: any = undefined;
       if (i && i.product) pidRaw = i.product.id ?? i.product;
       pidRaw = pidRaw ?? (i as any).productId ?? (i as any).id;
 
       if (pidRaw === null || pidRaw === undefined) {
+        await this.logsService.createFailureLog(
+          'CREATE_INVOICE_FAILED',
+          user.id,
+          `Producto id faltante en invoiceDetails[${idx}]`,
+        );
         throw new BadRequestException(
           `Producto id faltante en invoiceDetails[${idx}]`,
         );
@@ -81,12 +104,17 @@ export class FacturaService {
 
       const n = Number(pidRaw);
       if (Number.isNaN(n)) {
+        await this.logsService.createFailureLog(
+          'CREATE_INVOICE_FAILED',
+          user.id,
+          `Producto id inválido en invoiceDetails[${idx}]`,
+        );
         throw new BadRequestException(
           `Producto id inválido en invoiceDetails[${idx}]`,
         );
       }
       productIds.push(n);
-    });
+    }
 
     const productos = await this.productoRepo.findByIds(productIds);
 
@@ -107,6 +135,11 @@ export class FacturaService {
       const producto = productos.find((p) => p.id === itemProductId);
 
       if (!producto) {
+        await this.logsService.createFailureLog(
+          'CREATE_INVOICE_FAILED',
+          user.id,
+          `Producto no encontrado ID: ${itemProductId}`,
+        );
         throw new BadRequestException('Producto no encontrado');
       }
       FacturaValidatorHelper.validarPrecio(producto.price);
@@ -151,6 +184,11 @@ export class FacturaService {
   async changeState(id: number, state: 'PAID' | 'CANCELLED') {
     const factura = await this.repo.findById(id);
     if (!factura) {
+      await this.logsService.createFailureLog(
+        'CHANGE_INVOICE_STATE_FAILED',
+        undefined,
+        `Factura no encontrada ID: ${id}`,
+      );
       throw new BadRequestException('Factura no encontrada');
     }
 
@@ -158,12 +196,22 @@ export class FacturaService {
     // Nota: el domain factura puede no exponer `state` en la entidad actual,
     // así que delegamos la verificación final al repositorio que consulta la DB.
     if ((factura as any).state && (factura as any).state !== 'PENDING') {
+      await this.logsService.createFailureLog(
+        'CHANGE_INVOICE_STATE_FAILED',
+        undefined,
+        `Transición inválida para factura ID: ${id}`,
+      );
       throw new BadRequestException(
         'Solo se permiten transiciones desde PENDING',
       );
     }
 
     if (state !== 'PAID' && state !== 'CANCELLED') {
+      await this.logsService.createFailureLog(
+        'CHANGE_INVOICE_STATE_FAILED',
+        undefined,
+        `Estado inválido: ${state} para factura ID: ${id}`,
+      );
       throw new BadRequestException('Estado inválido');
     }
 
@@ -171,6 +219,11 @@ export class FacturaService {
       const updated = await this.repo.updateState(id, state);
       return updated;
     } catch (err) {
+      await this.logsService.createFailureLog(
+        'CHANGE_INVOICE_STATE_FAILED',
+        undefined,
+        err.message || 'Error al cambiar estado',
+      );
       throw new BadRequestException(err.message || 'Error al cambiar estado');
     }
   }

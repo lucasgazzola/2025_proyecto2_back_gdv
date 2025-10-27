@@ -42,19 +42,40 @@ export class ClienteController {
 
   @Get()
   @Roles(Role.ADMIN, Role.USER)
-  findAll() {
+  async findAll(@Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_CLIENTES',
+        req.user?.id,
+        `Usuario ${req.user?.email} listó clientes`,
+      );
+    } catch (e) {}
     return this.service.findAll();
   }
 
   @Get(':email')
   @Roles(Role.ADMIN, Role.USER)
-  findByEmail(@Param('email') email: string) {
+  async findByEmail(@Param('email') email: string, @Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_CLIENT_BY_EMAIL',
+        req.user?.id,
+        `Usuario ${req.user?.email} solicitó cliente por email: ${email}`,
+      );
+    } catch (e) {}
     return this.service.findByEmail(email);
   }
 
   @Get(':id')
   @Roles(Role.ADMIN, Role.USER)
-  findById(@Param('id', ParseIntPipe) id: number) {
+  async findById(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    try {
+      await this.logsService.createInfoLog(
+        'GET_CLIENT',
+        req.user?.id,
+        `Usuario ${req.user?.email} solicitó cliente ID: ${id}`,
+      );
+    } catch (e) {}
     return this.service.findById(id);
   }
 

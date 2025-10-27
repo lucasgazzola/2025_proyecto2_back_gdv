@@ -1,4 +1,5 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import { LogsService } from '../logs/logs.service';
 import { Categoria } from './categoria.entity';
 import { ICategoriaRepositoryToken } from './repositories/categoria.repository.interface';
 import type { ICategoriaRepository } from './repositories/categoria.repository.interface';
@@ -10,6 +11,7 @@ export class CategoriaService {
   constructor(
     @Inject(ICategoriaRepositoryToken)
     private readonly repo: ICategoriaRepository,
+    private readonly logsService: LogsService,
   ) {}
 
   async findAll(): Promise<Categoria[]> {
@@ -18,7 +20,14 @@ export class CategoriaService {
 
   async findById(id: number): Promise<Categoria | null> {
     const categoria = await this.repo.findById(id);
-    if (!categoria) throw new BadRequestException('Categoría no encontrada');
+    if (!categoria) {
+      await this.logsService.createFailureLog(
+        'GET_CATEGORY_FAILED',
+        undefined,
+        `Categoría no encontrada ID: ${id}`,
+      );
+      throw new BadRequestException('Categoría no encontrada');
+    }
 
     return categoria;
   }
@@ -26,6 +35,11 @@ export class CategoriaService {
   async create(createCategoryDto: CreateCategoriaDto): Promise<Categoria> {
     const existing = await this.repo.findByName(createCategoryDto.name.trim());
     if (existing) {
+      await this.logsService.createFailureLog(
+        'CREATE_CATEGORY_FAILED',
+        undefined,
+        `Nombre de categoría ya existe: ${createCategoryDto.name}`,
+      );
       throw new BadRequestException('El nombre de categoría ya existe');
     }
     return await this.repo.create(createCategoryDto);
@@ -37,6 +51,11 @@ export class CategoriaService {
   ): Promise<Categoria> {
     const existing = await this.repo.findById(id);
     if (!existing) {
+      await this.logsService.createFailureLog(
+        'UPDATE_CATEGORY_FAILED',
+        undefined,
+        `Categoría no encontrada ID: ${id}`,
+      );
       throw new BadRequestException('Categoría no encontrada');
     }
 
@@ -45,6 +64,11 @@ export class CategoriaService {
         updateCategoryDto.name.trim(),
       );
       if (duplicate && duplicate.id !== id) {
+        await this.logsService.createFailureLog(
+          'UPDATE_CATEGORY_FAILED',
+          undefined,
+          `Categoría con nombre duplicado: ${updateCategoryDto.name}`,
+        );
         throw new BadRequestException('Categoría con este nombre ya existe');
       }
     }
@@ -55,6 +79,11 @@ export class CategoriaService {
   async delete(id: number): Promise<void> {
     const existing = await this.repo.findById(id);
     if (!existing || !existing.isActive) {
+      await this.logsService.createFailureLog(
+        'DELETE_CATEGORY_FAILED',
+        undefined,
+        `Categoría no encontrada ID: ${id}`,
+      );
       throw new BadRequestException('Categoría no encontrada');
     }
     return await this.repo.delete(id);
