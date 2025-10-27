@@ -66,6 +66,24 @@ export class UsuarioController {
     return this.usuarioService.findById(id);
   }
 
+  @Patch('profile')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async updateProfile(
+    @Body() updateUsuarioDto: UpdateUsuarioDto,
+    @Request() req,
+  ) {
+    const result = await this.usuarioService.update(
+      req.user.id,
+      updateUsuarioDto,
+    );
+    await this.logsService.createSuccessLog(
+      'UPDATE_PROFILE',
+      req.user.id,
+      `Usuario ${req.user.email} actualizó su perfil`,
+    );
+    return result;
+  }
+
   @Patch(':id')
   @Roles(Role.ADMIN)
   async update(
